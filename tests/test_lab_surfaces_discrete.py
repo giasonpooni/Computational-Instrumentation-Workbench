@@ -1,10 +1,11 @@
 """Surface interface conformance, derivative checks, chart atlas and singularity scans (T033-T037)."""
 from __future__ import annotations
 
-from copy import deepcopy
+from copy import copy, deepcopy
 import json
 import math
 import os
+import warnings
 
 import numpy as np
 import pytest
@@ -265,20 +266,107 @@ def test_sympy_references_match_surface_interface():
     assert not sp.simplify(expression).atoms(sp.Float)
 
 
+@pytest.fixture(scope="module")
+def generic_assembly():
+    pytest.importorskip("sympy")
+    from ciw.lab.surfaces_discrete_ad import GenericDiffgeom
+    return GenericDiffgeom()
+
+
+@pytest.mark.lab_task("T034")
+def test_generic_diffgeom_assembly_is_evaluated_at_the_right_jet(generic_assembly):
+    from ciw.lab.surfaces_discrete_ad import (JET_COMPONENTS, JET_ORDERS, diffgeom_reference, metric_jet,
+                                              pointwise_diffgeom_reference, taylor_jet_check)
+
+    # Gamma and K at a point depend only on the metric 2-jet there: sympy.diffgeom's assembly of a generic metric,
+    # evaluated at an exact jet, equals its own assembly of that jet's Taylor metric at the origin, exactly.
+    exact = taylor_jet_check(generic_assembly)
+    assert exact["mismatched_components"] == [] and exact["rational"]
+    assert exact["components"] == exact["nonzero_components"] == 9
+    assert len(set(exact["jet"])) == 18 and "0" not in exact["jet"]
+    # sympy.diffgeom's result uses g, its first derivatives and, as the Gauss equation says, only E_vv, F_uv and G_uu
+    # of the second derivatives.
+    assert exact["used"] == ["E_00", "E_01", "E_02", "E_10", "F_00", "F_01", "F_10", "F_11", "G_00", "G_01", "G_10",
+                             "G_20"]
+    # Naming F_uv's term with E_vv's jet entry breaks the identity.
+    f_uv = JET_COMPONENTS.index((0, 1)) * len(JET_ORDERS) + JET_ORDERS.index((1, 1))
+    e_vv = JET_COMPONENTS.index((0, 0)) * len(JET_ORDERS) + JET_ORDERS.index((0, 2))
+    mutant = copy(generic_assembly)
+    mutant.symbols = list(generic_assembly.symbols)
+    mutant.symbols[f_uv], mutant.symbols[e_vv] = mutant.symbols[e_vv], mutant.symbols[f_uv]
+    assert taylor_jet_check(mutant)["mismatched_components"] == [8]
+    surfaces = conformance_surfaces()
+    forms = formulas(surfaces)
+    for key in sd.POINTWISE_KEYS:
+        reference = pointwise_diffgeom_reference(*forms[key], generic_assembly)
+        for u in DOMAINS[key].sample(3, SEED + 4):
+            values = reference(u)
+            np.testing.assert_allclose(values["christoffel"], surfaces[key].christoffel(u), atol=1e-12)
+            assert values["gaussian_curvature"] == pytest.approx(surfaces[key].gaussian_curvature(u), abs=1e-12)
+    # The same misnaming at a point of the bump, where F_uv and E_vv differ, moves K far from the interface.
+    u = np.array([0.4, -0.9])
+    swapped = list(metric_jet(*forms["gaussian-bump"])(u))
+    assert abs(swapped[f_uv] - swapped[e_vv]) > 1e-2
+    swapped[f_uv], swapped[e_vv] = swapped[e_vv], swapped[f_uv]
+    assert abs(generic_assembly(swapped)["gaussian_curvature"] - surfaces["gaussian-bump"].gaussian_curvature(u)) > 1e-3
+    # On a directly assembled surface whose off-diagonal metric depends on both coordinates, the two routes agree.
+    direct, _, _ = diffgeom_reference(*forms["saddle"])
+    pointwise = pointwise_diffgeom_reference(*forms["saddle"], generic_assembly)
+    for u in DOMAINS["saddle"].sample(3, SEED + 4):
+        np.testing.assert_allclose(pointwise(u)["christoffel"], direct(u)["christoffel"], atol=1e-14)
+        assert pointwise(u)["gaussian_curvature"] == pytest.approx(direct(u)["gaussian_curvature"], abs=1e-14)
+
+
+class _ComplexRefusing(Sphere):
+    def metric(self, u):
+        if np.iscomplexobj(u):
+            raise TypeError("complex coordinates")
+        return super().metric(u)
+
+
+@pytest.mark.lab_task("T034")
+def test_complex_step_through_the_core_interface():
+    from ciw.lab.surfaces_discrete_ad import COMPLEX_STEP_TOLERANCE, complex_step_derivatives
+
+    surfaces = conformance_surfaces()
+    rows = sd.complex_step_study(surfaces, points=3)
+    carried = {key for key, row in rows.items() if row["outcome"] == "carried"}
+    assert carried == {"plane", "saddle", "hyperbolic-plane"}
+    assert max(rows[key]["normalized_error"] for key in carried) <= COMPLEX_STEP_TOLERANCE
+    # The other seven do not refuse: math functions of NumPy complex scalars keep the real part with a
+    # ComplexWarning, whatever the caller's warning filters.
+    assert {key for key, row in rows.items() if row["outcome"] == "imaginary_part_discarded"} == set(surfaces) - carried
+    u = np.array([1.0, 0.5])
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        dg, outcome = complex_step_derivatives(surfaces["sphere"], u)
+    assert outcome == "imaginary_part_discarded" and not np.any(dg)
+    assert np.max(np.abs(surfaces["sphere"].metric_derivatives(u))) > 0.5
+    # Where the formulas carry complex coordinates the step has no cancellation: exact to rounding.
+    dg, outcome = complex_step_derivatives(surfaces["saddle"], [0.3, -0.7])
+    assert outcome == "carried"
+    np.testing.assert_allclose(dg, surfaces["saddle"].metric_derivatives([0.3, -0.7]), rtol=0, atol=1e-15)
+    assert complex_step_derivatives(_ComplexRefusing(1.0), u) == (None, "refused")
+    assert sd.complex_step_study({"sphere": _ComplexRefusing(1.0)}, points=2)["sphere"] == {
+        "outcome": "refused", "normalized_error": None}
+
+
 @pytest.mark.lab_task("T034")
 def test_t034_report(tmp_path):
     pytest.importorskip("sympy")
+    from ciw import __version__
+    from ciw.lab.runner import source_digest
+
     report = _run("T034", tmp_path)
     assert report["state"] == "completed"
     assert report["evidence_status"]["primary"] == "numerically_verified"
-    assert report["evidence_status"]["counts"]["independently_verified"] == 4
-    assert report["evidence_status"]["counts"]["numerically_verified"] == 5
+    assert report["evidence_status"]["counts"]["independently_verified"] == 6
+    assert report["evidence_status"]["counts"]["numerically_verified"] == 6
     labels = _labels(report)
     # The independent evidence is per finding: every sympy-origin claim is independently verified,
-    # while ciw assembly of sympy derivatives and the dual numbers stay same-origin.
-    for claim, label in labels.items():
-        if claim.startswith("sympy"):
-            assert label == "independently_verified", claim
+    # while ciw assembly of sympy derivatives, the dual numbers and the complex step stay same-origin.
+    sympy_claims = [claim for claim in labels if claim.startswith("sympy")]
+    assert len(sympy_claims) == 6 and all(labels[claim] == "independently_verified" for claim in sympy_claims)
     assert labels["Christoffel symbols and curvature assembled in ciw code from sympy derivatives match the interface "
                   "on every conformance surface"] == "numerically_verified"
     assert labels["Symbolic and dual-number derivative agreement certifies derivatives of surfaces reconstructed from "
@@ -288,18 +376,47 @@ def test_t034_report(tmp_path):
                      "ciw.lab.surfaces"]
     assert exact["value"] == {"surfaces": 7, "mismatches": 0}
     assert exact["basis"]["independent_check"]["checker"]["implementation"] == "sympy.diffgeom"
-    assert exact["basis"]["independent_check"]["producer"]["implementation"].endswith("_declared_curvature")
-    derivs = findings["sympy-differentiated metric and metric derivatives match the ciw surface interface on every "
-                      "conformance surface"]
-    assert "surfaces_discrete_geometry.py" in derivs["basis"]["independent_check"]["producer"]["revision"]
+    restated = exact["basis"]["independent_check"]["producer"]
+    assert restated["implementation"].endswith("_declared_curvature")
+    assert restated["source_sha256"] == {sd.MODULE: source_digest(sd.MODULE)}
+    # Every ciw producer names the package version and the digests of the modules its compared values come from.
+    for claim in sympy_claims:
+        check = findings[claim]["basis"]["independent_check"]
+        assert check["producer"]["revision"] == f"ciw {__version__}", claim
+        if claim != exact["claim"]:
+            assert check["producer"]["source_sha256"] == {sd.CORE: source_digest(sd.CORE),
+                                                          sd.GEOMETRY: source_digest(sd.GEOMETRY)}, claim
+    # The three surfaces sympy.diffgeom cannot assemble directly within the budget are assembled generically and
+    # evaluated at their metric 2-jets; the route is checked exactly on a Taylor metric and against the direct route.
+    pointwise = [claim for claim in sympy_claims if "gaussian-bump, gaussian-bump-shear and rotated-torus" in claim]
+    assert len(pointwise) == 2
+    for claim in pointwise:
+        basis = findings[claim]["basis"]
+        assert basis["independent_check"]["checker"]["implementation"] == "sympy.diffgeom"
+        assert [(c["reference_kind"], c["observed"]) for c in basis["checks"]][0] == ("exact_arithmetic", 0.0)
+        assert basis["checks"][1]["reference_kind"] == "cross_implementation" and basis["checks"][1]["observed"] <= 1e-14
+        assert findings[claim]["value"] <= 1e-14
+    symbolic = json.loads((tmp_path / "artifacts" / "T034" / "sympy-vs-ciw.json").read_text(encoding="utf-8"))
+    routes = symbolic["sympy_diffgeom_pointwise"]
+    assert routes["reported"] == list(sd.POINTWISE_KEYS) and set(routes["gap_to_direct"]) == set(sd.DIFFGEOM_KEYS)
+    assert set(symbolic["sympy_diffgeom"]) == set(sd.DIFFGEOM_KEYS)
+    assert set(sd.DIFFGEOM_KEYS) | set(sd.POINTWISE_KEYS) == set(routes["surfaces"])
+    assert routes["taylor_jet_check"]["mismatched_components"] == []
     # ciw dual numbers against ciw surfaces are same-origin comparisons; only the
     # self-test against hand-derived closed forms is analytic.
     for claim, record in findings.items():
-        if claim.startswith(("Nested dual-number", "Dual-number curvature", "Dual-number checks expose")):
+        if claim.startswith(("Nested dual-number", "Dual-number curvature", "Dual-number checks expose",
+                             "Complex-step")):
             assert {c["reference_kind"] for c in record["basis"]["checks"]} == {"cross_implementation"}, claim
     self_test = findings["Dual numbers reproduce closed-form first, mixed and third derivatives without perturbation "
                          "confusion"]
     assert {c["reference_kind"] for c in self_test["basis"]["checks"]} == {"analytic"}
+    step = next(record for claim, record in findings.items() if claim.startswith("Complex-step"))
+    assert step["evidence_status"] == "numerically_verified"
+    assert step["value"] == {"carried": 3, "imaginary_part_discarded": 7, "refused": 0, "wrong": 5}
+    assert step["counterexample"]["witness"]["wrong"] == ["gaussian-bump", "gaussian-bump-shear", "rotated-torus",
+                                                           "sphere", "torus"]
+    assert step["counterexample"]["witness"]["discarded_but_exact"] == ["cylinder", "plane-polar"]
     _common_report_checks(report)
 
 
@@ -314,9 +431,10 @@ def test_t034_degrades_without_sympy(tmp_path):
     assert report["state"] == "partial"
     labels = _labels(report)
     sympy_claims = [claim for claim in labels if claim.startswith("sympy")]
-    assert len(sympy_claims) == 4 and all(labels[claim] == "not_established" for claim in sympy_claims)
+    assert len(sympy_claims) == 6 and all(labels[claim] == "not_established" for claim in sympy_claims)
     assert report["evidence_status"]["primary"] == "numerically_verified"
-    assert report["evidence_status"]["counts"]["numerically_verified"] == 4
+    # The dual numbers and the complex step need NumPy only.
+    assert report["evidence_status"]["counts"]["numerically_verified"] == 5
     assert report["evidence_status"]["counts"]["independently_verified"] == 0
 
 

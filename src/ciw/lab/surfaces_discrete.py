@@ -4,15 +4,17 @@ Scope: validates and extends the reusable surface interface of
 ``ciw.lab.surfaces`` without modifying it. T033 runs a conformance suite over
 every catalogue surface, two reparametrized charts and a rigid rotation, and
 shows that the suite rejects seeded defects. T034 checks the hand-coded
-derivatives against sympy (distinct origin, optional) and against nested
-forward-mode dual numbers (same origin). T035 maps the central-difference
-error of metric derivatives over twelve decades of step size. T036 builds
-chart atlases with exact transitions (two polar charts of the sphere, and the
-Monge and polar charts of a graph surface) and integrates geodesics through
-chart singularities with chart switching. T037 scans approaches to candidate
-singular points and separates coordinate, conical and curvature singularities
-and an infinite-distance boundary within stated detection limits, with
-pointwise refusal codes.
+derivatives against sympy differentiation and sympy.diffgeom assembly
+(distinct origin, optional), against nested forward-mode dual numbers (same
+origin), and with a complex step through the core interface, which works
+only where the core formulas carry complex coordinates. T035 maps the
+central-difference error of metric derivatives over twelve decades of step
+size. T036 builds chart atlases with exact transitions (two polar charts of
+the sphere, and the Monge and polar charts of a graph surface) and
+integrates geodesics through chart singularities with chart switching. T037
+scans approaches to candidate singular points and separates coordinate,
+conical and curvature singularities and an infinite-distance boundary
+within stated detection limits, with pointwise refusal codes.
 
 Non-claims: all surfaces, coordinates and curvatures are normalized
 mathematical objects. Findings establish agreement between computations on
@@ -23,10 +25,8 @@ cases beyond their thresholds, which T037 records as counterexamples.
 """
 from __future__ import annotations
 
-import hashlib
 import math
 import os
-from pathlib import Path
 
 import numpy as np
 
@@ -36,7 +36,9 @@ from .integrators import integrate_fixed
 from .registry import task
 from .runner import builtin_identity
 from .surfaces import GaussianBump, HyperbolicPlane, Plane, Reparametrized, Saddle, Sphere
-from .surfaces_discrete_ad import DualMath, DualSurface, diffgeom_reference, formulas, partial, symbolic_reference
+from .surfaces_discrete_ad import (COMPLEX_STEP, COMPLEX_STEP_TOLERANCE, DualMath, DualSurface, GenericDiffgeom,
+                                  complex_step_derivatives, diffgeom_reference, formulas, partial,
+                                  pointwise_diffgeom_reference, symbolic_reference, taylor_jet_check)
 from .surfaces_discrete_charts import (CONICAL_TOLERANCE, CURVATURE_BLOWUP, DEGENERACY, DIVERGENCE_TOLERANCE,
                                        FIT_RESIDUAL, FIT_WINDOW, SWITCH_THRESHOLD, Approach, SphereAtlas, graph_atlas,
                                        great_circle, integrate_atlas, integrate_single, pole_passing_great_circle,
@@ -67,10 +69,12 @@ NEXT_STEPS = {
              "gate for smooth surface data, run on every Surface before a lab task integrates on it and refusing a "
              "nonconforming one with a named code per failed identity (the seeded defects are refused only inside "
              "T033 today, " + MESH_REFUSALS + " and do not use this suite)."),
-    "T034": ("Deferred research question: an independent assembly of the connection and curvature for gaussian-bump, "
-             "gaussian-bump-shear and rotated-torus (for example sympy.diffgeom as for the other seven surfaces, or a "
-             "second computer algebra system), where ciw-written assembly of sympy derivatives gives only same-origin "
-             "evidence, and complex-step derivatives once the core surfaces accept complex coordinates."),
+    "T034": ("Deferred research question (CIW change): make the core surface formulas carry complex coordinates "
+             "(NumPy functions rather than math functions of NumPy complex scalars) or refuse them with a named code, "
+             "so that a complex step checks the hand-coded metric derivatives to rounding on the seven conformance "
+             "surfaces whose formulas now cast complex coordinates to real with only a ComplexWarning (sphere, "
+             "cylinder, torus, gaussian-bump, plane-polar, gaussian-bump-shear and rotated-torus, five of them with "
+             "wrong derivatives)."),
     "T035": ("Deferred research question (queue extension after T168): with metric samples carrying noise of "
              "standard deviation sigma, does the optimal central-difference step move to about "
              "(sigma / |d^3 g|)^(1/3) and the smallest derivative error grow like sigma^(2/3)? (T043 propagates "
@@ -97,11 +101,6 @@ def _check(reference, observed, tolerance, comparison="abs_le", kind="analytic")
 def _refusal(reference, expected, observed):
     return {"reference_kind": "refusal", "reference": reference, "expected_refusal": expected,
             "observed_refusal": observed, "passed": observed == expected}
-
-
-def _source_identity(name):
-    data = Path(__file__).with_name(name).read_bytes().replace(b"\r\n", b"\n")
-    return hashlib.sha256(data).hexdigest()
 
 
 def _sig(value, digits=3):
@@ -323,10 +322,15 @@ def surface_interface(ctx):
 
 
 # ---------------------------------------------------------------- T034
-# Surfaces whose sympy.diffgeom Riemann tensor is cheap to assemble here; the
-# three heavier ones (gaussian-bump, gaussian-bump-shear, rotated-torus) get
-# sympy derivatives with the connection and curvature assembled in ciw code.
+# Surfaces whose own symbolic metric sympy.diffgeom assembles within the section budget. For the three others its
+# direct assembly is too slow (measured on one core: gaussian-bump 7.3 s, rotated-torus 44 s, gaussian-bump-shear
+# unfinished after 600 s), so sympy.diffgeom assembles a generic metric once and its expressions are evaluated at
+# the sympy-differentiated metric 2-jet of each point (POINTWISE_KEYS).
 DIFFGEOM_KEYS = ("plane", "sphere", "cylinder", "saddle", "torus", "hyperbolic-plane", "plane-polar")
+POINTWISE_KEYS = ("gaussian-bump", "gaussian-bump-shear", "rotated-torus")
+# A complex step whose derivative misses the hand-coded dg by at least this (normalized) is wrong, not rounded: the
+# carried surfaces agree to COMPLEX_STEP_TOLERANCE and the wrong ones miss by 0.1 or more at their worst point.
+COMPLEX_STEP_WRONG = 1e-3
 
 
 def _declared_curvature(key, surface, sp, u, v):
@@ -365,6 +369,46 @@ def _residuals(reference, surface, u, length):
     return out
 
 
+def _route_gap(direct, pointwise, length):
+    """Normalized gap between two sympy.diffgeom routes (direct and pointwise), scaled like ``_residuals``."""
+    gamma, curvature = direct["christoffel"], direct["gaussian_curvature"]
+    return {"christoffel": (float(np.max(np.abs(pointwise["christoffel"] - gamma)))
+                            / (float(np.max(np.abs(gamma))) + 1.0 / length)),
+            "gaussian_curvature": abs(pointwise["gaussian_curvature"] - curvature) / (abs(curvature) + length ** -2)}
+
+
+def _ciw_producer(implementation, *sources):
+    """A ciw producer identity: the package version and the digest of each source module the compared values use."""
+    from .. import __version__
+    from .runner import source_digest
+
+    return {"implementation": implementation, "revision": f"ciw {__version__}",
+            "source_sha256": {source: source_digest(source) for source in sources}}
+
+
+def complex_step_study(surfaces, points=AD_POINTS, seed=SEED + 34) -> dict:
+    """Complex-step metric derivatives through the core interface of each surface against its hand-coded dg.
+
+    Per surface: the outcome (``carried``, ``imaginary_part_discarded`` or
+    ``refused``; the worst over its points) and the largest normalized error
+    of the complex-step dg, scaled like T034's other dg residuals.
+    """
+    rank = {"carried": 0, "imaginary_part_discarded": 1, "refused": 2}
+    rows = {}
+    for key, surface in surfaces.items():
+        domain, outcome, worst = DOMAINS[key], "carried", 0.0
+        for u in domain.sample(points, seed):
+            dg_step, found = complex_step_derivatives(surface, u)
+            outcome = max(outcome, found, key=rank.get)
+            if dg_step is None:
+                continue
+            g, dg = surface.metric(u), surface.metric_derivatives(u)
+            scale = float(np.max(np.abs(dg))) + float(np.max(np.abs(g))) / domain.length(u)
+            worst = max(worst, float(np.max(np.abs(dg_step - dg))) / scale)
+        rows[key] = {"outcome": outcome, "normalized_error": None if outcome == "refused" else worst}
+    return rows
+
+
 def dual_self_test() -> dict:
     """Dual-number derivatives of closed-form functions against hand derivatives, including nesting."""
     x0, y0 = 0.7, -0.4
@@ -397,6 +441,8 @@ def dual_self_test() -> dict:
       regression_tests=(f"{TESTS}::test_dual_numbers_match_closed_forms",
                         f"{TESTS}::test_dual_derivatives_match_surface_interface",
                         f"{TESTS}::test_sympy_references_match_surface_interface",
+                        f"{TESTS}::test_generic_diffgeom_assembly_is_evaluated_at_the_right_jet",
+                        f"{TESTS}::test_complex_step_through_the_core_interface",
                         f"{TESTS}::test_t034_report", f"{TESTS}::test_t034_degrades_without_sympy"))
 def derivative_checks(ctx):
     surfaces = conformance_surfaces()
@@ -404,19 +450,25 @@ def derivative_checks(ctx):
     have_sympy = ctx.available("module:sympy")
     if have_sympy:
         import sympy as sp
-    dual_rows, sympy_rows, diffgeom_rows, exact = {}, {}, {}, {}
+        # sympy.diffgeom assembles a generic metric once; the Taylor-jet identity checks, in exact arithmetic, that
+        # its terms are evaluated at the right entries of each point's metric 2-jet.
+        assembly = GenericDiffgeom()
+        taylor = taylor_jet_check(assembly)
+    dual_rows, sympy_rows, diffgeom_rows, pointwise_rows, route_rows, exact = {}, {}, {}, {}, {}, {}
     for key, surface in surfaces.items():
         dual = DualSurface(*forms[key])
-        reference = symbolic_reference(*forms[key]) if have_sympy else None
-        geometric = None
+        sources = {}
+        if have_sympy:
+            sources["sympy"] = symbolic_reference(*forms[key])
+            sources["pointwise"] = pointwise_diffgeom_reference(*forms[key], assembly)
         if have_sympy and key in DIFFGEOM_KEYS:
-            geometric, expression, (u_sym, v_sym) = diffgeom_reference(*forms[key])
+            sources["diffgeom"], expression, (u_sym, v_sym) = diffgeom_reference(*forms[key])
             simplified = sp.simplify(expression)
             declared = _declared_curvature(key, surface, sp, u_sym, v_sym)
             exact[key] = {"sympy_diffgeom": str(simplified), "declared": str(declared),
                           "difference_simplifies_to_zero": bool(sp.simplify(simplified - declared) == 0)}
         domain = DOMAINS[key]
-        dual_worst, sym_worst, geo_worst = {}, {}, {}
+        dual_worst, route_worst, worst = {}, {}, {name: {} for name in sources}
         for u in domain.sample(AD_POINTS, SEED + 34):
             length = domain.length(u)
             row = _residuals({"metric": dual.metric(u), "metric_derivatives": dual.metric_derivatives(u),
@@ -429,15 +481,18 @@ def derivative_checks(ctx):
                 row["embedding"] = float(np.max(np.abs(dual.point(u) - surface.embedding(u))))
             for name, value in row.items():
                 dual_worst[name] = max(dual_worst.get(name, 0.0), value)
-            for source, worst in ((reference, sym_worst), (geometric, geo_worst)):
-                if source is not None:
-                    for name, value in _residuals(source(u), surface, u, length).items():
-                        worst[name] = max(worst.get(name, 0.0), value)
+            values = {name: source(u) for name, source in sources.items()}
+            for name, value in values.items():
+                for quantity, residual in _residuals(value, surface, u, length).items():
+                    worst[name][quantity] = max(worst[name].get(quantity, 0.0), residual)
+            if "diffgeom" in values:
+                for quantity, gap in _route_gap(values["diffgeom"], values["pointwise"], length).items():
+                    route_worst[quantity] = max(route_worst.get(quantity, 0.0), gap)
         dual_rows[key] = dual_worst
         if have_sympy:
-            sympy_rows[key] = sym_worst
-        if geo_worst:
-            diffgeom_rows[key] = geo_worst
+            sympy_rows[key], pointwise_rows[key] = worst["sympy"], worst["pointwise"]
+        if "diffgeom" in worst:
+            diffgeom_rows[key], route_rows[key] = worst["diffgeom"], route_worst
     dual_derivs = max(max(r["metric"], r["metric_derivatives"], r["christoffel"]) for r in dual_rows.values())
     dual_curv = max(max(r["gaussian_curvature"], r.get("extrinsic_curvature", 0.0)) for r in dual_rows.values())
     dual_embed = max(r.get("embedding", 0.0) for r in dual_rows.values())
@@ -450,20 +505,34 @@ def derivative_checks(ctx):
                  for u in DOMAINS["gaussian-bump"].sample(AD_POINTS, SEED + 34))
     ctx.artifact_json("dual-vs-ciw.json", {"points_per_surface": AD_POINTS, "seed": SEED + 34, "surfaces": dual_rows,
                                            "self_test": self_test, "dropped_cross_term_defect": defect})
-    # The compared ciw values come from the core surfaces and, for plane-polar and
-    # gaussian-bump-shear, from the chart maps of the section's geometry module.
-    producer = {"implementation": "ciw.lab.surfaces",
-                "revision": (f"surfaces.py sha256 {_source_identity('surfaces.py')}; surfaces_discrete_geometry.py "
-                             f"sha256 {_source_identity('surfaces_discrete_geometry.py')}")}
-    restated = {"implementation": "ciw.lab.surfaces_discrete._declared_curvature",
-                "revision": f"surfaces_discrete.py sha256 {_source_identity('surfaces_discrete.py')}"}
+    # A complex step through the core interface needs formulas that carry complex coordinates; most cast them to real.
+    steps = complex_step_study(surfaces)
+    carried = [key for key, row in steps.items() if row["outcome"] == "carried"]
+    discarded = [key for key, row in steps.items() if row["outcome"] == "imaginary_part_discarded"]
+    wrong = sorted(key for key in discarded if steps[key]["normalized_error"] >= COMPLEX_STEP_WRONG)
+    carried_error = max(steps[key]["normalized_error"] for key in carried)
+    step_counts = {"carried": len(carried), "imaginary_part_discarded": len(discarded),
+                   "refused": sum(row["outcome"] == "refused" for row in steps.values()), "wrong": len(wrong)}
+    ctx.artifact_json("complex-step.json", {"step": COMPLEX_STEP, "points_per_surface": AD_POINTS, "seed": SEED + 34,
+                                            "wrong_threshold": COMPLEX_STEP_WRONG, "surfaces": steps,
+                                            "counts": step_counts})
+    # The compared ciw values come from the core surfaces and, for plane-polar, gaussian-bump-shear and
+    # rotated-torus, from the chart maps and rotation of the section's geometry module.
+    producer = _ciw_producer("ciw.lab.surfaces", CORE, GEOMETRY)
+    restated = _ciw_producer("ciw.lab.surfaces_discrete._declared_curvature", MODULE)
+    pointwise_note = "a generic metric at the sympy-differentiated metric 2-jet"
     sympy_claims = (
         "sympy-differentiated metric and metric derivatives match the ciw surface interface on every conformance surface",
         "sympy.diffgeom Christoffel symbols match the ciw surface interface on seven surfaces",
         "sympy.diffgeom Riemann curvature R_1212 / det g matches the supplied Gaussian curvature on seven surfaces",
         "sympy.diffgeom curvature of seven surfaces simplifies exactly to the closed forms restated from ciw.lab.surfaces",
         "Christoffel symbols and curvature assembled in ciw code from sympy derivatives match the interface on every "
-        "conformance surface")
+        "conformance surface",
+        "sympy.diffgeom Christoffel symbols of " + pointwise_note + " match the ciw surface interface on gaussian-bump, "
+        "gaussian-bump-shear and rotated-torus",
+        "sympy.diffgeom Riemann curvature R_1212 / det g of " + pointwise_note + " matches the supplied Gaussian "
+        "curvature on gaussian-bump, gaussian-bump-shear and rotated-torus")
+    roundoff = {"kind": "roundoff", "value": 1e-12, "basis": "floating evaluation of lambdified expressions"}
     findings = []
     if have_sympy:
         checker = {"implementation": "sympy", "revision": sp.__version__}
@@ -473,31 +542,43 @@ def derivative_checks(ctx):
         geo_gamma = max(r["christoffel"] for r in diffgeom_rows.values())
         geo_curv = max(r["gaussian_curvature"] for r in diffgeom_rows.values())
         mismatches = sum(not row["difference_simplifies_to_zero"] for row in exact.values())
+        jet_gamma = max(pointwise_rows[key]["christoffel"] for key in POINTWISE_KEYS)
+        jet_curv = max(pointwise_rows[key]["gaussian_curvature"] for key in POINTWISE_KEYS)
+        route_gamma = max(row["christoffel"] for row in route_rows.values())
+        route_curv = max(row["gaussian_curvature"] for row in route_rows.values())
+        taylor_gamma = sum(index < 8 for index in taylor["mismatched_components"])
+        taylor_curv = sum(index == 8 for index in taylor["mismatched_components"])
         ctx.artifact_json("sympy-vs-ciw.json", {"sympy": sp.__version__, "points_per_surface": AD_POINTS,
                                                 "sympy_derivatives": sympy_rows, "sympy_diffgeom": diffgeom_rows,
-                                                "exact_curvature": exact})
+                                                "exact_curvature": exact,
+                                                "sympy_diffgeom_pointwise": {"surfaces": pointwise_rows,
+                                                                             "reported": list(POINTWISE_KEYS),
+                                                                             "gap_to_direct": route_rows,
+                                                                             "taylor_jet_check": taylor}})
+
+        def pointwise_checks(quantity, taylor_mismatches, route_gap):
+            return [_check(f"{quantity} components of the generic assembly at an exact rational 2-jet that differ from "
+                           "sympy.diffgeom's direct assembly of that jet's Taylor metric at the origin",
+                           taylor_mismatches, 0, kind="exact_arithmetic"),
+                    _check(f"max normalized {quantity} gap to the direct sympy.diffgeom assembly on the seven surfaces "
+                           "it assembles (both sympy.diffgeom)", route_gap, 1e-12, kind="cross_implementation")]
+
         findings += [
             finding(sympy_claims[0], "numerical", sym_derivs,
                     {"independent_check": dict(_check("max normalized residual over g and dg (sympy differentiation "
                                                       "of the re-expressed formula)", sym_derivs, 1e-12),
                                                producer=producer, checker=checker)},
-                    unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12,
-                                                             "basis": "floating evaluation of lambdified expressions"},
-                    tolerance={"abs": 1e-12, "rel": 0.0}),
+                    unit="normalized residual", uncertainty=roundoff, tolerance={"abs": 1e-12, "rel": 0.0}),
             finding(sympy_claims[1], "numerical", geo_gamma,
                     {"independent_check": dict(_check("max |Gamma_diffgeom - Gamma| / (max|Gamma| + 1/l) "
                                                       "(metric_to_Christoffel_2nd)", geo_gamma, 1e-12),
                                                producer=producer, checker=diffgeom_checker)},
-                    unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12,
-                                                             "basis": "floating evaluation of lambdified expressions"},
-                    tolerance={"abs": 1e-12, "rel": 0.0}),
+                    unit="normalized residual", uncertainty=roundoff, tolerance={"abs": 1e-12, "rel": 0.0}),
             finding(sympy_claims[2], "numerical", geo_curv,
                     {"independent_check": dict(_check("max |K_diffgeom - K| / (|K| + 1/l^2) "
                                                       "(metric_to_Riemann_components)", geo_curv, 1e-12),
                                                producer=producer, checker=diffgeom_checker)},
-                    unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12,
-                                                             "basis": "floating evaluation of lambdified expressions"},
-                    tolerance={"abs": 1e-12, "rel": 0.0}),
+                    unit="normalized residual", uncertainty=roundoff, tolerance={"abs": 1e-12, "rel": 0.0}),
             finding(sympy_claims[3], "mathematical", {"surfaces": len(exact), "mismatches": mismatches},
                     {"independent_check": dict(_check("restated closed forms whose difference from the diffgeom "
                                                       "curvature does not simplify to 0", mismatches, 0,
@@ -510,9 +591,21 @@ def derivative_checks(ctx):
                     {"checks": [_check("max normalized residual over Gamma and K (sympy differentiation; Levi-Civita "
                                        "and Riemann assembly written in ciw, same origin)", assembled, 1e-12,
                                        kind="cross_implementation")]},
-                    unit="normalized residual", uncertainty={"kind": "roundoff", "value": 1e-12,
-                                                             "basis": "floating evaluation of lambdified expressions"},
-                    tolerance={"abs": 1e-12, "rel": 0.0}),
+                    unit="normalized residual", uncertainty=roundoff, tolerance={"abs": 1e-12, "rel": 0.0}),
+            finding(sympy_claims[5], "numerical", jet_gamma,
+                    {"independent_check": dict(_check("max |Gamma_diffgeom - Gamma| / (max|Gamma| + 1/l) "
+                                                      "(metric_to_Christoffel_2nd of E, F, G at the 2-jet)",
+                                                      jet_gamma, 1e-12),
+                                               producer=producer, checker=diffgeom_checker),
+                     "checks": pointwise_checks("Christoffel", taylor_gamma, route_gamma)},
+                    unit="normalized residual", uncertainty=roundoff, tolerance={"abs": 1e-12, "rel": 0.0}),
+            finding(sympy_claims[6], "numerical", jet_curv,
+                    {"independent_check": dict(_check("max |K_diffgeom - K| / (|K| + 1/l^2) "
+                                                      "(metric_to_Riemann_components of E, F, G at the 2-jet)",
+                                                      jet_curv, 1e-12),
+                                               producer=producer, checker=diffgeom_checker),
+                     "checks": pointwise_checks("curvature", taylor_curv, route_curv)},
+                    unit="normalized residual", uncertainty=roundoff, tolerance={"abs": 1e-12, "rel": 0.0}),
         ]
         state = "completed"
     else:
@@ -547,6 +640,24 @@ def derivative_checks(ctx):
                 tolerance={"abs": 1e-6, "rel": 1e-4},
                 counterexample={"statement": "Finite, index-symmetric hand-coded metric derivatives are correct",
                                 "witness": {"mutant": "gaussian-bump with f_xy dropped", "normalized_error": _sig(defect)}}),
+        finding("Complex-step metric derivatives through the core surface interface match the hand-coded ones where its "
+                "formulas carry complex coordinates and are wrong on conformance surfaces whose formulas discard the "
+                "imaginary part", "numerical", step_counts,
+                {"checks": [_check("max normalized |Im g(u + i h e_k) / h - dg_k| (h = 1e-30) on the surfaces that carry "
+                                   "complex coordinates (same ciw origin)", carried_error, COMPLEX_STEP_TOLERANCE,
+                                   kind="cross_implementation"),
+                            _check(f"surfaces that discard the imaginary part with a NumPy ComplexWarning and whose "
+                                   f"complex-step dg misses the hand-coded dg by at least {COMPLEX_STEP_WRONG:g} "
+                                   "(normalized)", len(wrong), 1, comparison="ge", kind="cross_implementation")]},
+                uncertainty={"kind": "reference_error", "value": 0,
+                             "basis": "exact counts of surfaces by outcome; the carried surfaces' complex step has no "
+                                      "cancellation, so their residual is rounding"},
+                tolerance={"abs": 0, "rel": 0},
+                counterexample={"statement": "A complex step through the core surface interface either differentiates "
+                                             "the metric or raises",
+                                "witness": {"wrong": wrong, "carried": sorted(carried),
+                                            "discarded_but_exact": sorted(set(discarded) - set(wrong)),
+                                            "warning": "ComplexWarning"}}),
         finding("Symbolic and dual-number derivative agreement certifies derivatives of surfaces reconstructed from "
                 "physical measurements", "physical", None, {}),
     ]
@@ -554,44 +665,66 @@ def derivative_checks(ctx):
         "hypothesis": ("At seeded points of every conformance surface, the hand-coded metric, metric derivatives, "
                        "Christoffel symbols and Gaussian curvature equal those of its closed-form embedding (or "
                        "metric) computed by an independent symbolic system (sympy differentiation, and sympy.diffgeom "
-                       "for the connection and curvature of seven surfaces) and by forward-mode automatic "
-                       "differentiation; for those seven surfaces the symbolic curvature equals the declared closed "
-                       "form exactly."),
+                       "for the connection and curvature of all ten surfaces: of the surface's own metric for seven, "
+                       "and of a generic metric evaluated at the surface's metric 2-jet for the other three) and by "
+                       "forward-mode automatic differentiation; for seven surfaces the symbolic curvature equals the "
+                       "declared closed form exactly. A complex step through the core interface differentiates the "
+                       "metric only where the core formulas carry complex coordinates."),
         "mathematical_model": ("Re-expressed X(u) per surface with exact rational parameters; g = X_i . X_j; dg by "
                                "differentiation; sympy.diffgeom Gamma from metric_to_Christoffel_2nd and K = g_0m "
-                               "R^m_101 / det g from metric_to_Riemann_components; ciw-assembled Gamma and R_1212 / det g "
-                               "from sympy derivatives; dual-number K from Brioschi with exact second derivatives and "
-                               "from LN - M^2."),
+                               "R^m_101 / det g from metric_to_Riemann_components, of the surface's metric or of a "
+                               "generic metric (E, F; F, G) whose terms are the metric 2-jet (Gamma and R at a point "
+                               "depend only on it); ciw-assembled Gamma and R_1212 / det g from sympy derivatives; "
+                               "dual-number K from Brioschi with exact second derivatives and from LN - M^2; complex "
+                               "step dg_k = Im g(u + i h e_k) / h with h = 1e-30."),
         "input_data": [f"{len(surfaces)} conformance surfaces, {AD_POINTS} points each (PCG64 seed {SEED + 34})",
-                       f"sympy {'available' if have_sympy else 'unavailable'}; sympy.diffgeom and exact closed forms "
-                       f"for {len(DIFFGEOM_KEYS)} surfaces ({', '.join(DIFFGEOM_KEYS)})"],
+                       f"sympy {'available' if have_sympy else 'unavailable'}; sympy.diffgeom of the surface's own "
+                       f"metric and exact closed forms for {len(DIFFGEOM_KEYS)} surfaces ({', '.join(DIFFGEOM_KEYS)}), "
+                       f"of a generic metric at the 2-jet for {len(POINTWISE_KEYS)} ({', '.join(POINTWISE_KEYS)})",
+                       "an exact rational 2-jet with 18 distinct nonzero entries (surfaces_discrete_ad.TAYLOR_JET)"],
         "observation_model": ("Same normalization as T033; exact symbolic comparison by "
-                              "sympy.simplify(simplify(K_diffgeom) - declared) == 0."),
-        "expected_invariant": "Residuals at rounding level (<= 1e-12); exact closed forms identical.",
-        "experiment": ("Evaluate sympy-lambdified, sympy.diffgeom and dual-number quantities at seeded points, compare "
-                       "with the ciw interface, simplify the diffgeom curvature exactly, self-test the dual numbers, "
-                       "and confirm a seeded derivative defect is exposed."),
+                              "sympy.simplify(simplify(K_diffgeom) - declared) == 0; the Taylor-jet identity in "
+                              "rational arithmetic; complex-step outcomes classified by whether the metric came back "
+                              "complex, NumPy raised a ComplexWarning or the interface raised."),
+        "expected_invariant": ("Residuals at rounding level (<= 1e-12); exact closed forms and the Taylor-jet "
+                               "identity exact."),
+        "experiment": ("Evaluate sympy-lambdified, sympy.diffgeom (direct, and generic at the 2-jet) and dual-number "
+                       "quantities at seeded points, compare with the ciw interface and the two diffgeom routes with "
+                       "each other, check the generic assembly exactly on a rational Taylor metric, simplify the "
+                       "diffgeom curvature exactly, self-test the dual numbers, confirm a seeded derivative defect is "
+                       "exposed, and take a complex step through the core interface of every surface."),
         "numerical_result": (f"dual numbers: derivatives {_fmt(dual_derivs)}, curvature {_fmt(dual_curv)}, self-test "
                              f"{_fmt(self_error)}, defect exposed at {_fmt(defect)}"
                              + (f"; sympy: g and dg {_fmt(sym_derivs)}; sympy.diffgeom: Gamma {_fmt(geo_gamma)}, "
-                                f"K {_fmt(geo_curv)}, exact closed forms {len(exact) - mismatches}/{len(exact)}; "
-                                f"ciw assembly from sympy derivatives {_fmt(assembled)}"
-                                if have_sympy else "; sympy unavailable, symbolic checks not run")),
-        "uncertainty": ("Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions "
-                        "and dual arithmetic); agreement is shown at sampled points, and the exact symbolic identity "
-                        "for seven closed forms with the declared parameters."),
+                                f"K {_fmt(geo_curv)} on seven surfaces, exact closed forms "
+                                f"{len(exact) - mismatches}/{len(exact)}; generic sympy.diffgeom at the 2-jet: Gamma "
+                                f"{_fmt(jet_gamma)}, K {_fmt(jet_curv)} on the other three, gap to the direct route "
+                                f"{_fmt(max(route_gamma, route_curv))} on seven, Taylor-jet identity "
+                                f"{taylor['components'] - len(taylor['mismatched_components'])}/{taylor['components']} "
+                                f"components exact; ciw assembly from sympy derivatives {_fmt(assembled)}"
+                                if have_sympy else "; sympy unavailable, symbolic checks not run")
+                             + f"; complex step: {len(carried)} surfaces carry complex coordinates (residual "
+                               f"{_fmt(carried_error)}), {len(discarded)} discard the imaginary part, {len(wrong)} of "
+                               "them with wrong derivatives"),
+        "uncertainty": ("Rounding only for the pointwise comparisons (floating evaluation of lambdified expressions, "
+                        "dual and complex arithmetic); agreement is shown at sampled points, and the exact symbolic "
+                        "identities for seven closed forms and one rational 2-jet with the declared parameters."),
         "failure_modes_checked": ["perturbation confusion in nested dual numbers",
                                   "formula re-expression not equal to the core embedding",
                                   "dropped mixed derivative (seeded defect)",
                                   "sign and index convention of the sympy.diffgeom Riemann components",
-                                  "float parameters rounded by simplification (parameters are exact rationals)"],
+                                  "float parameters rounded by simplification (parameters are exact rationals)",
+                                  "generic-assembly terms evaluated at the wrong entry of the metric 2-jet",
+                                  "complex coordinates cast to real by the core formulas (complex step)"],
         "unresolved_assumptions": [
             "The re-expressed formulas and the restated closed forms are written by hand from the same definitions "
             "as the core; a shared misunderstanding of a surface definition would pass both.",
-            "sympy.diffgeom assembles the connection and curvature only for seven surfaces; for gaussian-bump, "
-            "gaussian-bump-shear and rotated-torus they come from ciw-written assembly of sympy derivatives, which is "
-            "same-origin evidence.",
-            "Dual-number agreement is same-origin (ciw) evidence."]
+            "For gaussian-bump, gaussian-bump-shear and rotated-torus, sympy.diffgeom assembles a generic metric and "
+            "its expressions are evaluated in floating point at each point's sympy-differentiated metric 2-jet: the "
+            "naming of its terms by jet entry is written in ciw (checked exactly on one rational Taylor metric and "
+            "against the direct route on seven surfaces), and no exact symbolic identity is shown for these three "
+            "(the rotated torus's binary rotation entries are not exactly orthogonal).",
+            "Dual-number agreement and the complex step through the core interface are same-origin (ciw) evidence."]
             + ([] if have_sympy else ["sympy is not installed here, so the independent symbolic comparison did not run."]),
         "recommended_next_task": NEXT_STEPS["T034"],
         "provider_runtime_identity": builtin_identity((MODULE, AD, GEOMETRY, DOC, CORE)),

@@ -6,7 +6,8 @@ extend it (queue tasks T033–T037). The experiments live in
 `src/ciw/lab/surfaces_discrete.py` with helpers
 `surfaces_discrete_geometry.py` (conformance suite, Brioschi curvature,
 stencils, chart maps, singular surfaces, defect mutants),
-`surfaces_discrete_ad.py` (dual numbers, sympy and sympy.diffgeom references) and
+`surfaces_discrete_ad.py` (dual numbers, sympy and sympy.diffgeom references,
+complex step) and
 `surfaces_discrete_charts.py` (chart atlases, singularity scans, pointwise
 guard). Tests: `tests/test_lab_surfaces_discrete.py`.
 
@@ -152,19 +153,52 @@ rounded by `nsimplify`. The same formula feeds:
   residual against ciw 4.2e-16 (`independently_verified`).
 * **sympy.diffgeom** (distinct origin for both differentiation and
   assembly): `Γ` from `metric_to_Christoffel_2nd` and
-  `K = g₀ₘ Rᵐ₁₀₁ / det g` from `metric_to_Riemann_components`, for the seven
-  surfaces whose symbolic Riemann tensor is cheap (plane, sphere, cylinder,
-  saddle, torus, hyperbolic plane, plane-polar). Residuals 1.8e-16 (`Γ`) and
-  7.0e-16 (`K`), both `independently_verified`. `sympy.simplify` reduces the
-  diffgeom curvature exactly to closed forms restated from
-  `ciw.lab.surfaces` (the producer of that finding is the restatement,
-  `_declared_curvature`): plane 0, sphere 1, cylinder 0, saddle
-  −1/(u² + v² + 1)², torus cos v/(cos v + 2), hyperbolic −1, plane-polar 0.
+  `K = g₀ₘ Rᵐ₁₀₁ / det g` from `metric_to_Riemann_components`, for all ten
+  surfaces, by one of two routes.
+  * *Direct*, for the seven surfaces whose own symbolic Riemann tensor is
+    cheap (plane, sphere, cylinder, saddle, torus, hyperbolic plane,
+    plane-polar): sympy.diffgeom assembles the surface's metric expressions.
+    Residuals 1.8e-16 (`Γ`) and 7.0e-16 (`K`), both `independently_verified`.
+    `sympy.simplify` reduces the diffgeom curvature exactly to closed forms
+    restated from `ciw.lab.surfaces` (the producer of that finding is the
+    restatement, `_declared_curvature`): plane 0, sphere 1, cylinder 0,
+    saddle −1/(u² + v² + 1)², torus cos v/(cos v + 2), hyperbolic −1,
+    plane-polar 0.
+  * *Generic, evaluated at the 2-jet*, for gaussian-bump,
+    gaussian-bump-shear and rotated-torus. The direct route is too slow for
+    them: measured on one core of the lab host (sympy 1.14.0), sympy.diffgeom
+    took 7.3 s for the gaussian bump and 44 s for the rotated torus (whose
+    exact rational rotation entries make its metric expressions about 15
+    times as long as the torus's), and had not finished the sheared bump
+    after 600 s. Instead `GenericDiffgeom` runs
+    `metric_to_Christoffel_2nd` and `metric_to_Riemann_components` once
+    (about 1.7 s) on a metric whose components are undetermined functions
+    `E(u, v)`, `F(u, v)`, `G(u, v)`. Every term of the result is one of those
+    functions or one of their partial derivatives, and `Γ` and `R` at a point
+    depend only on the metric's 2-jet there, so the expressions are evaluated
+    at each point's 2-jet, which sympy differentiates from the surface's
+    formula (`metric_jet`, under 0.5 s per surface). The result uses 12 of
+    the 18 jet entries: `g`, its first derivatives and, of the second
+    derivatives, only `E_vv`, `F_uv` and `G_uu` (the Gauss equation's
+    `F_uv − (E_vv + G_uu)/2`). Residuals 3.5e-16 (`Γ`) and 1.7e-16 (`K`),
+    both `independently_verified`. Naming the terms by jet entry is ciw code,
+    so each finding also carries two same-origin checks of that naming: an
+    exact identity, in which sympy.diffgeom assembles the quadratic Taylor
+    metric of a rational jet with 18 distinct nonzero entries directly and
+    its `Γ` and `K` at the origin equal the generic expressions at the jet in
+    all 9 components; and the gap between the two routes on the seven directly
+    assembled surfaces, 2.8e-16 (`Γ`) and 8.1e-16 (`K`). With this route
+    T034 takes about 8 s on one core (4 s without it). Across the SkylakeX,
+    Haswell and Sandybridge OpenBLAS kernels the two residuals moved by at
+    most 7e-17 (the sympy side is evaluated with Python's `math`; the ciw
+    side's 2×2 inverse and determinant follow the kernel), far inside their
+    regression tolerance of 1e-12, the threshold their claims state, as for
+    the other residual findings.
 * **ciw assembly of sympy derivatives**: `Γ` and `R₁₂₁₂ / det g` written in
-  ciw code from sympy's derivatives, for all ten surfaces including the three
-  heavy ones (gaussian-bump, gaussian-bump-shear, rotated-torus). Residual
-  5.6e-16, recorded as a same-origin `cross_implementation` check
-  (`numerically_verified`), not as independent evidence.
+  ciw code from sympy's derivatives, for all ten surfaces. Residual 5.6e-16,
+  recorded as a same-origin `cross_implementation` check
+  (`numerically_verified`), not as independent evidence; since the generic
+  route it is a cross-check only.
 * **Nested forward-mode dual numbers** (implemented in ciw, so same-origin:
   their comparisons with the ciw interface, the embedding and the seeded
   defect are recorded as `cross_implementation` checks and are
@@ -174,11 +208,36 @@ rounded by `nsimplify`. The same formula feeds:
   ciw the residuals are 4.4e-16 (`g, dg, Γ`) and 1.0e-15 (`K`, both via
   Brioschi with exact second derivatives and via LN − M²). The dual numbers
   expose the dropped-`f_xy` defect at a normalized error of 0.061.
+* **Complex step through the core interface** (same origin:
+  `cross_implementation` checks, `numerically_verified`):
+  `∂_k g ≈ Im g(u + i h e_k)/h` with h = 1e-30 has no subtractive
+  cancellation, so where it works it is exact to rounding with no step-size
+  trade-off (compare T035). `complex_step_derivatives` passes a NumPy complex
+  point to `metric()` and classifies what the interface does with it, recording
+  warnings itself so the caller's filters do not change the outcome. It works
+  only where the core formulas carry complex coordinates, which the interface
+  does not promise:
+
+  | Outcome at the 12 points | Surfaces | Complex-step `dg` against the hand-coded `dg` (normalized, worst point) |
+  | --- | --- | --- |
+  | carried | plane (constant metric), saddle, hyperbolic plane | 2.2e-16 |
+  | imaginary part discarded with a NumPy ComplexWarning, derivative still right | cylinder (constant metric), plane-polar (its metric diag(1, r²) depends on r through products, which carry the step, and not on t) | 1.0e-16 |
+  | imaginary part discarded, derivative wrong | sphere, torus, rotated-torus (`dg` returned as 0); gaussian-bump, gaussian-bump-shear (only the polynomial factors carry the step) | 0.12 to 0.53 |
+  | refused | none | |
+
+  The core formulas call `math.sin`, `math.exp` and the like on NumPy
+  complex scalars, which NumPy converts to their real part with only a
+  ComplexWarning. So a complex step through the interface neither
+  differentiates nor raises on five surfaces, a counterexample recorded
+  with a check that counts them (5 ≥ 1). Refusal is exercised on a test
+  surface. Complex-step derivatives of the whole interface wait on a core
+  change (below).
 
 When sympy is absent the task reports `partial` and records the symbolic
-findings as `not_established`. The claim that this agreement certifies
-derivatives of surfaces reconstructed from physical measurements is recorded
-as a `physical` finding and is `not_established`.
+findings as `not_established`; the dual numbers and the complex step need
+NumPy only. The claim that this agreement certifies derivatives of surfaces
+reconstructed from physical measurements is recorded as a `physical` finding
+and is `not_established`.
 
 ## Analytic versus finite-difference derivatives (T035)
 
@@ -545,11 +604,25 @@ guard refuses from θ ≈ 1e-4.
   points of declared domains and for the declared examples. They are not
   proofs for whole domains or for general surfaces. The classifier has the
   detection limits stated above, and it misclassifies beyond them.
-* sympy agreement is independent in how derivatives are computed, and for
-  seven surfaces also in how the connection and curvature are assembled
-  (sympy.diffgeom). The closed-form re-expressions and the restated closed
-  forms are hand-written from the same definitions as the core, so a shared
-  misreading of a surface definition would pass both.
+* sympy agreement is independent in how derivatives are computed and, for
+  all ten surfaces, in how the connection and curvature are assembled
+  (sympy.diffgeom). For gaussian-bump, gaussian-bump-shear and
+  rotated-torus the assembly is of a generic metric, evaluated in floating
+  point at each point's 2-jet; naming its terms by jet entry is written in
+  ciw, and it is checked exactly on one rational Taylor metric and
+  numerically against the direct route on seven surfaces. No exact symbolic
+  identity is shown for these three: the rotated torus's binary rotation
+  entries are not exactly orthogonal (their exact RᵀR differs from I by up
+  to 1.6e-16), so its exact metric is not the torus's, and no closed form
+  is restated for the three. The closed-form re-expressions and the
+  restated closed forms are hand-written from the same definitions as the
+  core, so a shared misreading of a surface definition would pass both.
+  Every comparison needs sympy for its independent side; no second
+  computer algebra system is installed here.
+* The complex step is exercised through the interface as it is: it tests
+  the hand-coded `dg` only on the plane, saddle and hyperbolic plane, and
+  on cylinder and plane-polar only where the discarded imaginary part does
+  not matter.
 * Atlases need an embedding and a closed-form inverse for each chart; they
   are exercised on the sphere and on one graph surface. Intrinsic charts
   (the hyperbolic plane) are not covered. Chart switching happens between
@@ -572,10 +645,13 @@ testing a difference-based metric derivative.
 * T033 (queue extension after T168): make the conformance suite the admission
   gate for smooth surface data, refusing a nonconforming surface with a named
   code per failed identity before any lab task integrates on it.
-* T034: an independent assembly of the connection and curvature for
-  gaussian-bump, gaussian-bump-shear and rotated-torus (today same-origin
-  ciw assembly of sympy derivatives), and complex-step derivatives once the
-  core surfaces accept complex coordinates.
+* T034 (CIW change): make the core surface formulas carry complex
+  coordinates (NumPy functions rather than `math` functions of NumPy
+  complex scalars) or refuse them with a named code, so that a complex
+  step checks `dg` to rounding on the seven surfaces whose formulas now
+  cast complex coordinates to real, five of them with wrong derivatives.
+  (The independent assembly for gaussian-bump, gaussian-bump-shear and
+  rotated-torus that this question used to ask for is delivered above.)
 * T035 (queue extension after T168): with metric samples carrying noise σ,
   check that the optimal central-difference step moves to about
   (σ/|∂³g|)^(1/3) and the smallest derivative error grows like σ^(2/3).
@@ -594,6 +670,13 @@ testing a difference-based metric derivative.
   tighter condition bound (for example `cond g > 1e8`, code
   `degenerate_metric`), as `require_regular` does; on the sphere pole
   approach it now accepts `cond g` up to 3.2e11.
+* The core formulas evaluate `math.sin`, `math.cos`, `math.exp` and the
+  like, which take the real part of a NumPy complex scalar with only a
+  ComplexWarning. Evaluating them with NumPy functions (or refusing complex
+  coordinates with a named code, for example in `finite_point`, which
+  `metric()` does not call today) would let a complex step differentiate
+  the whole interface to rounding, or make the refusal explicit; T034
+  measures what happens now.
 
 The coded `SurfaceRefusal(message, code)` and `SAMPLING_DOMAINS` /
 `sampling_domain()` are already in the core, and this section uses them.

@@ -14,13 +14,20 @@ then feeds
   assembled here in ciw code from those derivatives; and
 * sympy.diffgeom (optional): Christoffel symbols and Riemann components
   assembled by sympy itself, so both differentiation and assembly have a
-  distinct origin. It is used for the surfaces whose symbolic Riemann tensor
-  is cheap.
+  distinct origin. For the surfaces whose symbolic Riemann tensor is cheap it
+  assembles the surface's own metric (:func:`diffgeom_reference`); for the
+  others it assembles a generic metric (E, F; F, G) once
+  (:class:`GenericDiffgeom`), whose expressions are evaluated at the metric
+  2-jet that sympy differentiation gives at each point
+  (:func:`pointwise_diffgeom_reference`). An exact identity on a rational
+  Taylor metric checks that evaluation (:func:`taylor_jet_check`).
 
 All are compared with the hand-coded derivatives of ``ciw.lab.surfaces``.
 Only sympy-differentiated and sympy.diffgeom-assembled quantities have a
 distinct origin; the dual numbers and the ciw assembly count as same-origin
-cross-checks.
+cross-checks. :func:`complex_step_derivatives` differentiates the core
+interface itself with a complex step, which works only where the core
+formulas carry complex coordinates.
 
 Non-claims: the formulas define normalized mathematical surfaces. Agreement
 shows that hand-coded derivatives match the derivatives of the declared
@@ -31,9 +38,11 @@ from __future__ import annotations
 
 from itertools import count
 import math
+import warnings
 
 import numpy as np
 
+from .surfaces import SurfaceRefusal
 from .surfaces_discrete_geometry import brioschi, christoffel_from
 
 _TAGS = count(1)
@@ -355,6 +364,35 @@ def symbolic_reference(kind, formula):
     return evaluate
 
 
+def _diffgeom_assembly(sp, g, u, v):
+    """sympy.diffgeom's connection and curvature of the metric ``g`` (2x2 sympy expressions in the symbols u, v).
+
+    Returns nine expressions in u, v: ``Gamma^k_ij`` in (k, i, j) order from
+    ``metric_to_Christoffel_2nd``, then ``K = g_{0m} R^m_{101} / det g`` from
+    ``metric_to_Riemann_components`` (R[rho, sigma, mu, nu] = R^rho_{sigma mu nu}).
+    """
+    from sympy.diffgeom import (CoordSystem, Manifold, Patch, TensorProduct, metric_to_Christoffel_2nd,
+                                metric_to_Riemann_components)
+
+    a, b = sp.symbols("a b", real=True)
+    chart = CoordSystem("C", Patch("P", Manifold("M", 2)), [a, b])
+    fields, forms = chart.coord_functions(), chart.base_oneforms()
+    to_fields = {u: fields[0], v: fields[1]}
+    metric = sum(g[i][j].subs(to_fields) * TensorProduct(forms[i], forms[j]) for i in range(2) for j in range(2))
+    back = {fields[0]: u, fields[1]: v}
+    christoffel = metric_to_Christoffel_2nd(metric)
+    riemann = metric_to_Riemann_components(metric)
+    det = g[0][0] * g[1][1] - g[0][1] * g[1][0]
+    curvature = sum(g[0][m] * sp.sympify(riemann[m, 1, 0, 1]).subs(back) for m in range(2)) / det
+    return [sp.sympify(christoffel[k, i, j]).subs(back) for k in range(2) for i in range(2) for j in range(2)] + [
+        curvature]
+
+
+def _connection(values) -> dict:
+    values = np.array(values, dtype=float)
+    return {"christoffel": values[:8].reshape(2, 2, 2), "gaussian_curvature": float(values[8])}
+
+
 def diffgeom_reference(kind, formula):
     """Christoffel symbols and curvature assembled by sympy.diffgeom from the symbolic metric.
 
@@ -365,25 +403,149 @@ def diffgeom_reference(kind, formula):
     the expression is the unsimplified symbolic K in the symbols u, v.
     """
     import sympy as sp
-    from sympy.diffgeom import (CoordSystem, Manifold, Patch, TensorProduct, metric_to_Christoffel_2nd,
-                                metric_to_Riemann_components)
 
     u, v = sp.symbols("u v", real=True)
-    a, b = sp.symbols("a b", real=True)
-    chart = CoordSystem("C", Patch("P", Manifold("M", 2)), [a, b])
-    fields, forms = chart.coord_functions(), chart.base_oneforms()
-    g = _symbolic_metric(sp, kind, formula, u, v)
-    to_fields = {u: fields[0], v: fields[1]}
-    metric = sum(g[i][j].subs(to_fields) * TensorProduct(forms[i], forms[j]) for i in range(2) for j in range(2))
-    back = {fields[0]: u, fields[1]: v}
-    christoffel = metric_to_Christoffel_2nd(metric)
-    riemann = metric_to_Riemann_components(metric)
-    det = g[0][0] * g[1][1] - g[0][1] * g[1][0]
-    curvature = sum(g[0][m] * sp.sympify(riemann[m, 1, 0, 1]).subs(back) for m in range(2)) / det
-    flat = [sp.sympify(christoffel[k, i, j]).subs(back) for k in range(2) for i in range(2) for j in range(2)]
-    function = sp.lambdify((u, v), flat + [curvature], modules="math", cse=True)
+    flat = _diffgeom_assembly(sp, _symbolic_metric(sp, kind, formula, u, v), u, v)
+    function = sp.lambdify((u, v), flat, modules="math", cse=True)
 
     def evaluate(point):
-        values = np.array(function(float(point[0]), float(point[1])), dtype=float)
-        return {"christoffel": values[:8].reshape(2, 2, 2), "gaussian_curvature": float(values[8])}
-    return evaluate, curvature, (u, v)
+        return _connection(function(float(point[0]), float(point[1])))
+    return evaluate, flat[8], (u, v)
+
+
+# The metric 2-jet at a point: the independent components g_00, g_01 = g_10 and
+# g_11 (E, F, G), each with its derivatives of these orders (in u, in v). The
+# Christoffel symbols at a point depend on g and its first derivatives there,
+# the Riemann tensor also on its second derivatives, and on nothing else.
+JET_COMPONENTS = ((0, 0), (0, 1), (1, 1))
+JET_ORDERS = ((0, 0), (1, 0), (0, 1), (2, 0), (1, 1), (0, 2))
+# An exact 2-jet (E, F, G, each in JET_ORDERS order) with 18 distinct nonzero
+# entries and E G - F^2 = 23/4 > 0, for taylor_jet_check.
+TAYLOR_JET = ((2, 1), (1, 3), (-1, 5), (1, 7), (2, 9), (-1, 11),
+              (1, 2), (-2, 13), (3, 17), (-1, 19), (4, 23), (1, 29),
+              (3, 1), (-1, 31), (2, 37), (1, 41), (-3, 43), (1, 47))
+
+
+class GenericDiffgeom:
+    """sympy.diffgeom's connection and curvature of a generic metric (E, F; F, G), evaluated at a metric 2-jet.
+
+    ``metric_to_Christoffel_2nd`` and ``metric_to_Riemann_components`` run once
+    on a metric whose components are undetermined functions E(u, v), F(u, v)
+    and G(u, v). Every term of the result is one of those functions or one of
+    their first or second partial derivatives; each is replaced by a jet symbol
+    (``symbols``, in JET_COMPONENTS x JET_ORDERS order), so evaluating the
+    expressions at a point needs only the metric's 2-jet there. The assembly
+    is sympy.diffgeom's; this class only names its terms, and a term it cannot
+    name is refused.
+    """
+
+    def __init__(self):
+        import sympy as sp
+        from sympy.core.function import AppliedUndef
+
+        u, v = sp.symbols("u v", real=True)
+        functions = {pair: sp.Function(name)(u, v) for pair, name in zip(JET_COMPONENTS, "EFG")}
+        g = [[functions[(0, 0)], functions[(0, 1)]], [functions[(0, 1)], functions[(1, 1)]]]
+        flat = [expression.doit() for expression in _diffgeom_assembly(sp, g, u, v)]
+        jet, self.symbols = {}, []
+        for pair, name in zip(JET_COMPONENTS, "EFG"):
+            for p, q in JET_ORDERS:
+                symbol = sp.Symbol(f"{name}_{p}{q}", real=True)
+                term = functions[pair] if p + q == 0 else sp.Derivative(functions[pair], *([u] * p + [v] * q))
+                jet[term] = symbol
+                self.symbols.append(symbol)
+        self.expressions = [expression.xreplace(jet) for expression in flat]
+        unnamed = set().union(*(e.atoms(sp.Derivative, sp.Subs, AppliedUndef) for e in self.expressions))
+        unnamed |= set().union(*(e.free_symbols for e in self.expressions)) - set(self.symbols)
+        if unnamed:
+            raise ValueError(f"Generic assembly has terms outside the metric 2-jet: {sorted(map(str, unnamed))}")
+        self._function = sp.lambdify(self.symbols, self.expressions, modules="math", cse=True)
+
+    def __call__(self, jet) -> dict:
+        return _connection(self._function(*[float(value) for value in jet]))
+
+
+def metric_jet(kind, formula):
+    """u -> the metric 2-jet of a formula by sympy differentiation, 18 floats in GenericDiffgeom.symbols order."""
+    import sympy as sp
+
+    u, v = sp.symbols("u v", real=True)
+    g = _symbolic_metric(sp, kind, formula, u, v)
+    jet = [sp.diff(g[i][j], u, p, v, q) for i, j in JET_COMPONENTS for p, q in JET_ORDERS]
+    function = sp.lambdify((u, v), jet, modules="math", cse=True)
+    return lambda point: function(float(point[0]), float(point[1]))
+
+
+def pointwise_diffgeom_reference(kind, formula, assembly: GenericDiffgeom):
+    """Christoffel symbols and curvature of a formula from sympy.diffgeom's generic assembly at the sympy 2-jet.
+
+    The same quantities as :func:`diffgeom_reference` without assembling the
+    surface's own symbolic Riemann tensor, which is slow for large metric
+    expressions (docs/lab/SURFACE_INTERFACE.md records the measured cost).
+    """
+    jet = metric_jet(kind, formula)
+    return lambda point: assembly(jet(point))
+
+
+def taylor_jet_check(assembly: GenericDiffgeom) -> dict:
+    """Exact check of the generic assembly's jet evaluation against sympy.diffgeom's own assembly.
+
+    sympy.diffgeom assembles the quadratic Taylor metric of the exact jet
+    TAYLOR_JET directly; at the origin its Christoffel symbols and curvature
+    depend only on that jet, so they must equal the generic expressions at
+    the jet exactly, in rational arithmetic. Every jet entry is nonzero and
+    distinct, so a term named with the wrong entry changes a value unless the
+    result cannot tell the two entries apart. ``used`` lists the jet entries
+    the generic expressions contain.
+    """
+    import sympy as sp
+
+    u, v = sp.symbols("u v", real=True)
+    values = [sp.Rational(n, d) for n, d in TAYLOR_JET]
+    taylor = {pair: sum(values[6 * index + order] * u ** p * v ** q / (sp.factorial(p) * sp.factorial(q))
+                        for order, (p, q) in enumerate(JET_ORDERS))
+              for index, pair in enumerate(JET_COMPONENTS)}
+    g = [[taylor[(0, 0)], taylor[(0, 1)]], [taylor[(0, 1)], taylor[(1, 1)]]]
+    direct = [expression.subs({u: 0, v: 0}) for expression in _diffgeom_assembly(sp, g, u, v)]
+    generic = [expression.subs(dict(zip(assembly.symbols, values))) for expression in assembly.expressions]
+    used = set().union(*(expression.free_symbols for expression in assembly.expressions))
+    return {"jet": [str(value) for value in values], "direct": [str(value) for value in direct],
+            "generic": [str(value) for value in generic], "components": len(direct),
+            "used": sorted(str(symbol) for symbol in used),
+            "nonzero_components": sum(value != 0 for value in direct),
+            "rational": all(value.is_Rational for value in direct + generic),
+            # Indices in the order of the assembly: Gamma^k_ij in (k, i, j) order, then K.
+            "mismatched_components": [index for index, (a, b) in enumerate(zip(direct, generic))
+                                      if sp.simplify(a - b) != 0]}
+
+
+# ------------------------------------------------------------- complex step
+COMPLEX_STEP = 1e-30
+COMPLEX_STEP_TOLERANCE = 1e-13  # normalized; the complex step has no cancellation, so rounding is all that remains
+_COMPLEX_WARNING = np.exceptions.ComplexWarning
+
+
+def complex_step_derivatives(surface, u, h=COMPLEX_STEP):
+    """Complex-step metric derivatives Im g(u + i h e_k) / h through the core interface, and how the interface ran.
+
+    Returns ``(dg, outcome)``. ``outcome`` is ``"refused"`` when the metric
+    raised for complex coordinates (``dg`` is None), ``"imaginary_part_discarded"``
+    when NumPy cast them to real with a ComplexWarning (``dg`` is then whatever
+    imaginary part survived), else ``"carried"``. Warnings
+    are recorded here whatever the caller's filters, so the outcome does not
+    depend on them.
+    """
+    dg, outcomes = np.zeros((2, 2, 2)), []
+    for k in range(2):
+        z = np.array(u, dtype=complex)
+        z[k] += 1j * h
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            try:
+                g = np.asarray(surface.metric(z))
+            except (TypeError, ValueError, SurfaceRefusal):
+                return None, "refused"
+        outcomes.append("imaginary_part_discarded" if any(issubclass(w.category, _COMPLEX_WARNING) for w in caught)
+                        else "carried")
+        dg[k] = np.imag(g) / h
+    return dg, ("imaginary_part_discarded" if "imaginary_part_discarded" in outcomes else "carried")
