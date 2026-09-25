@@ -1,0 +1,49 @@
+name: Julia oscillator numerical provider
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-julia:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      JULIA_PKG_PRECOMPILE_AUTO: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10.12'
+      - name: Check the committed environment pin against the packaged files
+        run: python scripts/pin_julia_runtime.py --check
+      - name: Instantiate and precompile the packaged Julia environment
+        shell: bash
+        run: |
+          julia --version
+          JULIA_LOAD_PATH="@" julia --startup-file=no --project=src/ciw/julia -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); Pkg.status()'
+          git diff --exit-code -- src/ciw/julia/Project.toml src/ciw/julia/Manifest.toml
+      - name: Install build prerequisites
+        run: python -m pip install 'setuptools>=77' wheel
+      - name: Exercise the real worker through an isolated installed CIW wheel
+        shell: bash
+        run: |
+          python scripts/check_julia_oscillator.py --julia "$(which julia)" --output-dir results/julia-oscillator
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: julia-oscillator-${{ matrix.os }}
+          path: results/julia-oscillator
+          if-no-files-found: error
