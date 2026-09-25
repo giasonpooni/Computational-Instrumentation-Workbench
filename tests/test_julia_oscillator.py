@@ -109,7 +109,7 @@ def test_session_registers_and_retains_the_julia_operation(fake_worker, monkeypa
     session.workbench.bind_workflow("julia-oscillator", {"julia": "unused", "julia_runtime": "unused"})
     descriptor = session.handle({"protocol_version": 1, "request_id": "source", "type": "source.add",
                                  "payload": {"kind": jo.KIND, "label": "Julia test", "bytes_b64": base64.b64encode(canonical(source())).decode()}})
-    operation = next(item for item in session.handle({"protocol_version": 1, "request_id": "ops", "type": "operation.list", "payload": {}})["operations"] if item["operation_id"] == jo.OPERATION)
+    operation = next(item for item in session.handle({"protocol_version": 1, "request_id": "ops", "type": "operation.list", "payload": {}})["payload"]["operations"] if item["operation_id"] == jo.OPERATION)
     assert operation["available"] is True
     completed = session.handle({"protocol_version": 1, "request_id": "execute", "type": "operation.execute",
                                 "payload": {"operation_id": jo.OPERATION, "parameters": {"source_id": descriptor["source_id"]}}})

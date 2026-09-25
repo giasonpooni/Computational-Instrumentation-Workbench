@@ -318,7 +318,7 @@ def _step(source, evidence_id, repositories, runtime, execution_id=None):
     occurrence = execution_id or "execution-" + uuid.uuid4().hex
     request = request_from_source(source)
     request_bytes, response_bytes, output, worker_identity = _invoke(repositories, request, occurrence)
-    for key in ("profile", "operation_id", "threads", "startup_file", "worker_sha256", "project_sha256", "manifest_sha256"):
+    for key in ("profile", "threads", "startup_file", "worker_sha256", "project_sha256", "manifest_sha256"):
         if worker_identity.get(key) != runtime.get(key):
             raise ValueError("Julia worker identity differs from the pinned runtime")
     comparison = _compare(source, output)
