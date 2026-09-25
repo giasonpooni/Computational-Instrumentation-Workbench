@@ -154,6 +154,28 @@ def oscillator_model_card(source, result_data, provenance):
     return card
 
 
+def _trajectory_comparison(baseline, preview):
+    """Summarize the bounded preview against its baseline trajectory."""
+    comparison = {}
+    for key in ("q_m", "v_m_s", "energy_j"):
+        baseline_values = [float(value) for value in baseline[key]]
+        preview_values = [float(value) for value in preview[key]]
+        if len(baseline_values) != len(preview_values):
+            raise ValueError("Preview trajectory grids differ")
+        deltas = [new - old for old, new in zip(baseline_values, preview_values)]
+        comparison[key] = {
+            "max_abs_delta": max(abs(delta) for delta in deltas),
+            "final_delta": deltas[-1],
+        }
+    comparison["energy"] = {
+        "baseline_initial_j": baseline["energy_j"][0],
+        "baseline_final_j": baseline["energy_j"][-1],
+        "preview_initial_j": preview["energy_j"][0],
+        "preview_final_j": preview["energy_j"][-1],
+    }
+    return comparison
+
+
 def preview_oscillator(source, overrides):
     """Evaluate a bounded analytic what-if without creating CIW identities."""
     source = validate_source(canonical(source))
@@ -165,6 +187,7 @@ def preview_oscillator(source, overrides):
         section, key = _OVERRIDE_FIELDS[path]
         augmented[section][key] = value
     augmented = validate_source(canonical(augmented))
+    baseline_output = analytic_oracle(source)
     output = analytic_oracle(augmented)
     preview = {
         "schema": PREVIEW_SCHEMA,
@@ -173,6 +196,7 @@ def preview_oscillator(source, overrides):
         "augmented_source": augmented,
         "overrides": parsed,
         "output": output,
+        "comparison": _trajectory_comparison(baseline_output, output),
         "authority": {
             "kind": "hypothetical_offline_preview",
             "retention": "not_performed",
