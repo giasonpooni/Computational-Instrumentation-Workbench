@@ -151,3 +151,17 @@ def test_identified_design_inputs_are_refused_before_retention_when_no_prior_cou
             add(mutated)
     with pytest.raises(ValueError, match="finite, unambiguous JSON"):
         Workbench().add_source({"kind": "identified-design", "label": "probe", "bytes_b64": base64.b64encode(b'{"schema": "ciw.identified-design-input.v1", "a": NaN}').decode()})
+
+
+def test_a_file_beyond_the_reopen_budget_is_refused_by_its_size_before_it_is_read(tmp_path):
+    import os
+    from ciw import session as session_module
+    from ciw.cli import main
+    path = tmp_path / "huge.json"
+    path.write_bytes(b"{}")
+    os.truncate(path, session_module.READ_LIMIT + 1)  # a sparse file: the size without the bytes
+    with pytest.raises(ValueError, match="reopen budget"):
+        session_module.read_json(path)
+    assert main(["workspace", "verify", str(path)]) == 2
+    os.truncate(path, 2)
+    assert session_module.read_json(path) == {}

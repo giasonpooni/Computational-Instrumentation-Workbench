@@ -53,7 +53,17 @@ def _reject_constant(value: str) -> None:
     raise ValueError(f"Nonfinite JSON number: {value}")
 
 
+# No workspace this package writes approaches this size (the retained catalog
+# alone is bounded at 64 MiB canonical); a larger file is refused by its size
+# before any byte of it is read or decoded.
+READ_LIMIT = 256 * 1024 * 1024
+
+
 def read_json(path: Path) -> Any:
+    path = Path(path)
+    if path.stat().st_size > READ_LIMIT:
+        raise ValueError(f"{path.name} exceeds the {READ_LIMIT} byte reopen budget")
+
     def unique_pairs(items):
         result = {}
         for key, value in items:
@@ -61,7 +71,7 @@ def read_json(path: Path) -> Any:
                 raise ValueError(f"Duplicate JSON key: {key}")
             result[key] = value
         return result
-    return json.loads(Path(path).read_text(encoding="utf-8"), parse_constant=_reject_constant,
+    return json.loads(path.read_text(encoding="utf-8"), parse_constant=_reject_constant,
                       object_pairs_hook=unique_pairs)
 
 

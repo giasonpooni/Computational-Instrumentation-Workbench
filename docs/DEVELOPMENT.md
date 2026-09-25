@@ -80,7 +80,8 @@ differing fields (`algorithm.kernel_probe` on a host whose linear-algebra
 kernels round differently); a provider-backed kind is reported as needing a
 repository binding. The exit status is 0 when the file is valid, 1 when a
 retained item is refused (the report names it) and 2 when the file is not a
-workspace at all.
+workspace at all. A file larger than 256 MiB, which no workspace this package
+writes approaches, is refused by its size before any of it is read.
 
 The adapter script clones the explicitly pinned current and historical
 scientific sources. Source-dependent tests skip when their documented checkout
@@ -188,6 +189,20 @@ reference workflows make themselves, so the guarding cases exercise the
 workbench functions directly, with a stub workflow where the workbench check
 is the only guard for a provider-backed kind. A surviving mutant means a
 check has lost its test.
+`python scripts/check_validator_mutants.py` extends the same discipline to
+the source and result validators of the provider-free references
+(`energy_records`, `thermal_contract`, `uncertainty_validation`,
+`consistency_math`, `machine_workflow`, `project_workflow`). It derives the
+mutants from the code rather than from a hand-written list: every
+`if <condition>: raise` becomes `if False: raise`, one `or` clause at a time,
+and each module's `tests/test_*_checks.py` must fail for every one. Those
+tests are table driven: each case starts from the retained example, changes
+exactly one thing and expects the refusal that names it. The gate runs the
+mutants in parallel git worktrees that carry the live tree's copy of the
+module and its tests, so it never edits the working tree. A few clauses are
+listed in the script as equivalent (redundant with a neighbouring clause for
+every input the module can receive, such as a finiteness test beside a range
+comparison that NaN also fails); their survival is reported, not counted.
 Covariance CLI argument parsing and the pre-execution refusal of non-object
 parameters are asserted by
 `tests/test_adapter_cli.py::test_covariance_verbs_parse_and_refuse_non_object_parameters_before_execution`;

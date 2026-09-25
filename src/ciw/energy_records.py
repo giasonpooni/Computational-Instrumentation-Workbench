@@ -63,11 +63,7 @@ def _decimal(value, upper=2**64 - 1):
     return int(value)
 
 
-def _hash(value, *, prefixed=False):
-    if prefixed:
-        if type(value) is not str or not value.startswith("sha256:"):
-            raise ValueError("Require a prefixed SHA256 identity")
-        value = value[7:]
+def _hash(value):
     if type(value) is not str or not _HEX.fullmatch(value):
         raise ValueError("Require a lowercase SHA256 identity")
 

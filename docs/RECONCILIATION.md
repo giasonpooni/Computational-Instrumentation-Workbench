@@ -327,11 +327,52 @@ uncertainty representation; in-terminal plots.
 
 - `python -m pytest -q` (Python 3.11, no external checkouts) on the
   `claude/sleepy-planck-mar1u3` branch after the retained-workspace compatibility
-  gate, kernel probe, verification verb and CLI gap tests: **1405 passed,
+  gate, kernel probe, verification verb, CLI gap tests, audit hardening and
+  the identity, record and validator check tables: **1647 passed,
   577 skipped, 38 subtests passed**; the same suite runs green in Prototype
   checks on Ubuntu and Windows for Python 3.11 and 3.12, while the PLSR
   terminal job and the provider gates stay red until the private providers are
   reachable (see [provider availability](PROVIDER_AVAILABILITY.md)).
+- System audit on the same branch (Python 3.11, no external checkouts), each
+  probe a script run against the live code: every session request kind with
+  4,200 mutated payloads (0 escaped exceptions, every answer a well-formed
+  envelope, catalog round-trips and no reservation left behind); 12
+  transport-level frames against a served process (binary, malformed, deeply
+  nested, non-finite, oversized, wrong version, spatial and bad-path
+  connections: every one an error envelope or the documented close code);
+  eight threads and, separately, six real WebSocket clients retaining,
+  executing, replaying, inspecting and saving concurrently (no escaped
+  exception, unique identities, saved workspace verifies); a saved workspace
+  with one leaf changed at a time (1,400 reopens) and with keys removed, added
+  or swapped (1,461 reopens): every content change refused with a ValueError
+  and no reopen crashes; every provider-free reference under extreme numeric
+  inputs (861 executions: refused or finite, none escaped); every example
+  source of every kind with mutated leaves and, exhaustively, every numeric
+  leaf replaced by text; `ciw workspace verify` on directories, missing,
+  binary, truncated, deeply nested, oversized and sparse files (exit 2 with
+  a message, never a traceback); a 150 s soak of execute, replay, save and
+  reopen cycles (resident memory flat after warm-up); the whole suite in
+  reverse file order (order independent) and the transport suites under
+  `python -X dev` with resource warnings as errors (clean); all 140 `ciw`
+  command lines quoted in the documentation parsed against the real parser;
+  every markdown link resolved; every module imported with deprecation
+  warnings as errors. Findings became the fixes and tests in
+  `tests/test_audit_hardening.py`, the render binding in
+  `tests/test_instruments.py`, the retention checks recorded above and the
+  workspace reopen byte budget.
+- Mutation gates on the same branch: `scripts/check_reference_mutants.py`
+  (12 identity checks of the shared reference lifecycle and 10 record checks
+  of the retained workbench, every one killed; before
+  `tests/test_reference_identity_checks.py` and
+  `tests/test_workbench_record_checks.py` existed, 7 and 8 of them survived)
+  and `scripts/check_validator_mutants.py`, which derives a mutant from every
+  guarded `raise` of the provider-free validators: before the
+  `tests/test_*_checks.py` tables existed, 51 of 75 energy-log checks, 78 of
+  79 thermal-contract checks, 24 of 30 uncertainty-source checks, 14 of 16
+  consistency special-function checks, 15 of 15 machine-source checks and 6
+  of 8 project-source checks survived; afterwards every mutant is killed
+  except six clauses the script lists as logically redundant with a
+  neighbouring clause.
 - `python -m pytest` (Python 3.12 venv, no external checkouts) on 646aada: **404 passed, 46 skipped,
   38 subtests passed** in 92.09 s. Skips by reason: 1 × "Set CIW_RCI_REPO and CIW_FSRT_REPO to the pinned source checkouts" (test_adapter_cli.py); 12 × "Requires three clean pinned scientific checkouts" (test_covariance_integration.py); 19 × "Set CIW_GTE_REPO to exercise the real pinned GTE subprocess" (test_geodesic.py); 14 × "Set CIW_RCI_REPO and CIW_FSRT_REPO to exercise pinned domain subprocesses" (test_investigation.py) — 46 in total.
 - `python scripts/check_adapters.py` on 646aada (clones the current pins rci f863bdd / fsrt 09a756d /
