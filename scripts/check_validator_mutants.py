@@ -42,6 +42,9 @@ TARGETS = {
                          ["tests/test_machine_source_checks.py", "tests/test_machine_workflow.py"]),
     "project_workflow": ("src/ciw/project_workflow.py",
                          ["tests/test_project_source_checks.py", "tests/test_project_workflow.py"]),
+    "session": ("src/ciw/session.py",
+                ["tests/test_session_checks.py", "tests/test_audit_hardening.py", "tests/test_replay.py",
+                 "tests/test_protocol.py"]),
 }
 EQUIVALENT = {
     "thermal_contract": {
@@ -62,6 +65,21 @@ EQUIVALENT = {
     "consistency_math": {
         # NaN and infinities also fail the unit-interval comparison beside this clause.
         "not math.isfinite(x)",
+    },
+    "session": {
+        # calibration_status repeats this check with the same message before the value is used.
+        '"evaluated_at" in payload and not isinstance(payload["evaluated_at"], str)',
+        # datetime.fromisoformat never yields a tzinfo whose utcoffset() is None, and a missing
+        # tzinfo is exactly the case the other clause names.
+        "parsed.tzinfo is None",
+        "parsed.utcoffset() is None",
+        # Any suffix of another length either fails uuid parsing or, in a hyphenated or braced
+        # spelling, differs from its canonical hex, which the next check refuses.
+        "len(value) != len(prefix) + 32",
+        # validate_execution already requires a completed execution's result to name it back, so a
+        # retained operation result cannot reach these clauses with a refused or foreign execution.
+        'execution["status"] != "completed"',
+        'execution["result_id"] != result["result_id"]',
     },
 }
 
