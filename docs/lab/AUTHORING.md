@@ -377,7 +377,8 @@ exception by its type, not its message, when it may name a path.
   `telemetry-stack` directory of checkouts is `CIW_LAB_TELEMETRY_STACK`). The
   clean-room gate sets these only for the roles `scripts/check_lab.py` binds
   (CSG, FTR, SCR, the exchange SET, PPDA and SCR, the telemetry stack, the
-  retained proved-heat record and the PLSR/FTR interpreter), through
+  retained proved-heat record, the retained second-platform figure record and
+  the PLSR/FTR interpreter), through
   `TEST_VARIABLES` in `scripts/reproduce_lab.py`; tests of any other role skip
   in CI. A new role needs its variable in `TEST_VARIABLES` and its provisioning
   in `scripts/check_lab.py` (`REPOSITORIES` and its pin) before its tests run

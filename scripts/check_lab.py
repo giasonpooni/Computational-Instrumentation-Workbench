@@ -24,7 +24,11 @@ is bound as ``proved-heat-record`` from this checkout, since the clean room has
 no copy of ``lab/``: T099 validates it and rebuilds its engine with the pinned
 Rust toolchain when that toolchain is installed. Every retained record is
 checked for integrity by ``ciw lab verify`` (or ``ciw lab proved-heat verify``
-with ``--no-compare``).
+with ``--no-compare``). Likewise the latest retained second-platform figure
+record (``lab/figure-platforms/<record-id>/``, a CI run of
+``scripts/check_figures.py`` on Windows) is bound as ``figure-platform-record``
+for T158, and every one is checked by ``ciw lab verify`` (or ``ciw lab
+figure-platform verify`` with ``--no-compare``).
 
 ``--blas-core CORE`` runs the clean room on that OpenBLAS kernel (for example
 Haswell or Sandybridge), to verify the retained run on the kernels other hosts
@@ -118,6 +122,25 @@ def proved_heat_record(root: Path = ROOT / "lab" / "proved-heat") -> Path | None
     return max(records)[2] if records else None
 
 
+def figure_platform_record(root: Path = ROOT / "lab" / "figure-platforms") -> Path | None:
+    """The retained second-platform figure record T158 reads: the latest under ``root`` by its record.json date, then
+    its CI run id, then its identity.
+
+    ``ciw lab verify`` checks every record; an unreadable record.json sorts first rather than hiding the others.
+    """
+    records = []
+    for path in sorted(root.iterdir()) if root.is_dir() else []:
+        if not path.is_dir():
+            continue
+        try:
+            record = json.loads((path / "record.json").read_text(encoding="utf-8"))
+            date, run = record.get("date"), record.get("source", {}).get("run_id")
+        except (OSError, ValueError, AttributeError):
+            date, run = None, None
+        records.append((date if isinstance(date, str) else "", run if type(run) is int else -1, path.name, path))
+    return max(records)[3] if records else None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "results" / "lab-gate")
@@ -164,6 +187,9 @@ def main() -> int:
         record = proved_heat_record()
         if record is not None:
             command += ["--provider", f"proved-heat-record={record}"]
+        record = figure_platform_record()
+        if record is not None:
+            command += ["--provider", f"figure-platform-record={record}"]
         if sys.version_info >= (3, 12):
             # PLSR and FTR require Python 3.12; the clean-room interpreter hosts both.
             command += ["--extras", "dev,lab,mcp,plsr", "--provider", "plsr-python=@venv", "--provider", "ftr-python=@venv"]

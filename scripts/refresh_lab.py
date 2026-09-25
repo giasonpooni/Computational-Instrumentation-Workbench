@@ -12,14 +12,17 @@ fresh ones.
 Elapsed times, JUnit records and gate records stay with the run output: they
 are machine-specific and not retained evidence. Retained operator hardware
 runs (``lab/hardware/``), retained SP1 proved-heat gate records
-(``lab/proved-heat/``) and ``lab/README.md`` are never touched: a clean-room
-run cannot reproduce a hardware run or a proved-heat gate run, which are
-retained with ``ciw lab hardware retain`` and ``ciw lab proved-heat retain``.
+(``lab/proved-heat/``), retained second-platform figure records
+(``lab/figure-platforms/``) and ``lab/README.md`` are never touched: a
+clean-room run cannot reproduce a hardware run, a proved-heat gate run or a
+figure check on another platform, which are retained with ``ciw lab hardware
+retain``, ``ciw lab proved-heat retain`` and ``scripts/retain_figure_check.py``.
 When ``lab/proved-heat/`` holds a record, the run must have bound one as
 ``proved-heat-record`` (``scripts/check_lab.py`` does, as in the CI
 comparison) and T099 must have found the CI-pinned rustup toolchain, which
-CI's lab gate installs. Review ``git diff lab`` and ``ciw lab verify`` output before
-committing a refresh.
+CI's lab gate installs; when ``lab/figure-platforms/`` holds a record, the run
+must have bound one as ``figure-platform-record``. Review ``git diff lab`` and
+``ciw lab verify`` output before committing a refresh.
 """
 from __future__ import annotations
 
@@ -35,8 +38,9 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 RETAINED = ("reports", "artifacts", "queue-state.json", "REPORTS.md", "index.html")
-# Entries of lab/ a refresh never replaces: operator hardware runs, proved-heat gate records and the README.
-PRESERVED = ("hardware", "proved-heat", "README.md")
+# Entries of lab/ a refresh never replaces: operator hardware runs, proved-heat gate records, second-platform figure
+# records and the README.
+PRESERVED = ("hardware", "proved-heat", "figure-platforms", "README.md")
 assert not set(RETAINED) & set(PRESERVED)
 # The bindings scripts/check_lab.py makes on Python 3.12+; CI compares with a run that had all of them.
 REQUIRED_PROVIDERS = ("csg", "ftr", "scr", "set", "ppda", "scr-exchange", "plsr-python", "ftr-python",
@@ -101,10 +105,12 @@ def main() -> int:
             raise SystemExit(f"The clean-room run used Python {python}; retain a run of scripts/check_lab.py "
                              "under Python 3.12+")
         bound = {binding.partition("=")[0] for binding in record.get("providers") or []}
-        # T099 reads the retained proved-heat gate record; CI binds it whenever lab/proved-heat/ holds one.
-        records = ROOT / "lab" / "proved-heat"
-        required = REQUIRED_PROVIDERS + (("proved-heat-record",) if records.is_dir() and any(
-            path.is_dir() for path in records.iterdir()) else ())
+        # T099 reads the retained proved-heat gate record and T158 the second-platform figure record; CI binds each
+        # whenever lab/ holds one.
+        required = REQUIRED_PROVIDERS + tuple(role for role, directory in (("proved-heat-record", "proved-heat"),
+                                                                           ("figure-platform-record", "figure-platforms"))
+                                              if (ROOT / "lab" / directory).is_dir()
+                                              and any(path.is_dir() for path in (ROOT / "lab" / directory).iterdir()))
         unbound = [role for role in required if role not in bound]
         if unbound:
             raise SystemExit(f"The clean-room run bound no {', '.join(unbound)}; retain a run of "

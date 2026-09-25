@@ -18,6 +18,7 @@ retained artifact still hashes to its recorded digest.
 | `artifacts/T*/` | Tables, SVG figures, drafts and ledgers retained by each task |
 | `hardware/<run-id>/` | Operator hardware runs, retained with `ciw lab hardware retain` ([hardware/README.md](hardware/README.md)) |
 | `proved-heat/<run-id>/` | Runs of the SP1 proved-heat gate, retained with `ciw lab proved-heat retain` and read by T099 ([proved-heat/README.md](proved-heat/README.md)) |
+| `figure-platforms/<record-id>/` | CI's figure comparisons on Windows, retained with `scripts/retain_figure_check.py` and read by T158 ([figure-platforms/README.md](figure-platforms/README.md)) |
 
 Useful entry points: the counterexample catalogue
 (`artifacts/T157/COUNTEREXAMPLES.md`), uncertainty budgets
@@ -50,3 +51,12 @@ binds the latest record for T099, which labels the gate's claims
 `provider_backed` (the gate's outcome as recorded at CIW's pins) and rebuilds
 the engine the gate proved against with the CI-pinned Rust toolchain; `ciw lab
 verify` checks every record for integrity. The records claim nothing physical.
+
+`figure-platforms/` holds the figure comparisons CI's `figures.yml` made on
+Windows against this directory (see
+[figure-platforms/README.md](figure-platforms/README.md)); neither the
+clean-room run nor `scripts/refresh_lab.py` writes there. `scripts/check_lab.py`
+binds the latest record for T158, which counts its outcomes over the entries
+whose retained figure is still the run's and labels the regeneration on
+Windows `provider_backed` (the CI run's outcome as recorded); `ciw lab verify`
+checks every record for integrity.

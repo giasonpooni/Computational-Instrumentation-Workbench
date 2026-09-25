@@ -8,8 +8,9 @@ physical measurements in the retained run, and no task there claims one. Tasks
 that need hardware, providers or tools that are unavailable are reported as
 blocked or partial with their planned protocol, not skipped silently; runs made
 on a hardware host are retained separately under `lab/hardware/` (see
-Hardware evidence), and runs of the SP1 proved-heat gate under
-`lab/proved-heat/` (see Proved-heat gate records).
+Hardware evidence), runs of the SP1 proved-heat gate under
+`lab/proved-heat/` (see Proved-heat gate records), and CI's figure comparison
+on Windows under `lab/figure-platforms/` (see Second-platform figure records).
 
 ```
 hypothesis
@@ -135,12 +136,14 @@ ciw lab next --retained results/lab --retained lab   # merge a work directory ov
 ciw lab dashboard --retained lab --output lab/index.html   # self-contained HTML view
 ciw lab classify results/workspace.json          # label results in an existing CIW workspace
 ciw lab queue --retained lab --section geodesic-jacobi --state partial
-ciw lab verify --retained lab --fresh results/lab   # also checks lab/hardware/ and lab/proved-heat/ for integrity
+ciw lab verify --retained lab --fresh results/lab   # also checks lab/hardware/, lab/proved-heat/ and lab/figure-platforms/
 ciw lab run T138 --capture cmm=/captures/cmm-export.csv --output-dir results/cmm   # operator capture
 ciw lab hardware retain results/rtx2080 --retained lab --run-id rtx2080-2026-10-01 --host "RTX 2080 workstation"
 ciw lab hardware verify --retained lab           # integrity of every retained hardware run
 ciw lab proved-heat retain results/proved-heat --retained lab --run-id local-2026-09-24 --host "Linux x86-64, 16 GiB"
 ciw lab proved-heat verify --retained lab        # integrity of every retained proved-heat gate record
+python scripts/retain_figure_check.py figure-check-windows.zip --retained lab ...   # see Second-platform figure records
+ciw lab figure-platform verify --retained lab    # integrity of every retained second-platform figure record
 ciw lab unmeasured --retained lab                # open physical claims beside each hardware run's counts
 ```
 
@@ -274,10 +277,11 @@ wording, artifacts matching their recorded digests, and finding values within
 each finding's declared regression tolerance. It exits 3 on any difference, on
 a task present on only one side, and when the retained directory is missing or
 holds no reports. It also checks every retained hardware run under
-`<retained>/hardware/` and every proved-heat gate record under
-`<retained>/proved-heat/` for integrity (listed under `hardware_runs` and
-`proved_heat_records` in its output) and exits 3 on any integrity problem
-there.
+`<retained>/hardware/`, every proved-heat gate record under
+`<retained>/proved-heat/` and every second-platform figure record under
+`<retained>/figure-platforms/` for integrity (listed under `hardware_runs`,
+`proved_heat_records` and `figure_platform_records` in its output) and exits 3
+on any integrity problem there.
 
 `scripts/check_lab.py` is the clean-room gate that CI runs and the way to
 reproduce the retained run. It provisions CSG, FTR and SCR checkouts at CIW's
@@ -318,7 +322,10 @@ pinned providers. `check_lab.py` also binds
 the latest retained proved-heat gate record from the checkout's
 `lab/proved-heat/` as `proved-heat-record` (`CIW_LAB_PROVED_HEAT_RECORD`),
 since the clean room has no copy of `lab/`, so T099 reads the same record there
-(see [Proved-heat gate records](#proved-heat-gate-records)). Run without the bindings
+(see [Proved-heat gate records](#proved-heat-gate-records)), and the latest
+second-platform figure record from `lab/figure-platforms/` as
+`figure-platform-record` (`CIW_LAB_FIGURE_PLATFORM_RECORD`) for T158 (see
+[Second-platform figure records](#second-platform-figure-records)). Run without the bindings
 `check_lab.py` makes, its comparison with `lab/` fails on the provider tasks.
 Paths are made absolute without following symlinks, so a virtual
 environment's interpreter stays bound as itself, and `gate.json` records the
@@ -389,13 +396,17 @@ stack and the PLSR/FTR interpreter, whose reports
 carry a CSG, FTR or PLSR refusal code (a bound provider that did not run), or
 whose T077 did not run its telemetry session on the bound stack, and
 keeps elapsed times, the JUnit record and the gate record out of `lab/`. It
-never touches `lab/hardware/` or `lab/proved-heat/`: operator hardware runs
-and proved-heat gate runs enter `lab/` only through `ciw lab hardware retain`
-and `ciw lab proved-heat retain` (see [Hardware evidence](#hardware-evidence)
-and [Proved-heat gate records](#proved-heat-gate-records)). When
-`lab/proved-heat/` holds a record, it also refuses a run that bound none as
-`proved-heat-record`, or whose T099 did not find the CI-pinned rustup
-toolchain (its `tool:cargo+1.94.0` probe), which CI's lab gate installs.
+never touches `lab/hardware/`, `lab/proved-heat/` or `lab/figure-platforms/`:
+operator hardware runs, proved-heat gate runs and second-platform figure
+checks enter `lab/` only through `ciw lab hardware retain`, `ciw lab
+proved-heat retain` and `scripts/retain_figure_check.py` (see [Hardware
+evidence](#hardware-evidence), [Proved-heat gate
+records](#proved-heat-gate-records) and [Second-platform figure
+records](#second-platform-figure-records)). When `lab/proved-heat/` holds a
+record, it also refuses a run that bound none as `proved-heat-record`, or whose
+T099 did not find the CI-pinned rustup toolchain (its `tool:cargo+1.94.0`
+probe), which CI's lab gate installs; when `lab/figure-platforms/` holds a
+record, a run that bound none as `figure-platform-record`.
 
 `lab/` holds the retained run: `reports/T*.json`, `artifacts/T*/` (tables,
 SVG figures, drafts and ledgers), `queue-state.json` and `REPORTS.md`, the
@@ -461,11 +472,13 @@ or prose, and the figure leaves T158's report the same on every kernel.
 with the installed `ciw`, without a time budget, into a new directory,
 compares the figures the same way (counting the two declarations apart) and
 writes `figure-check.json` (`ciw.lab-figure-check.v1`: each figure's outcome
-and the platform, Python, NumPy and BLAS build, and the OpenBLAS kernel the
-loaded library runs, with any forced `OPENBLAS_CORETYPE`) and
-`figure-check.md`. It reads each figure's declaration from the retained
-report, so a declaration a task adds takes effect once its report is retained
-again. A task whose retained report used a provider that is not bound
+and the platform (OS, Python, NumPy and BLAS build, and the OpenBLAS kernel
+the loaded library runs, with any forced `OPENBLAS_CORETYPE`), and for a
+declared figure what identifies its retained copy on any kernel: its series
+and points, and a rounding-level figure's recorded values) and
+`figure-check.md`, both with LF line endings on every platform. It reads each
+figure's declaration from the retained report, so a declaration a task adds
+takes effect once its report is retained again. A task whose retained report used a provider that is not bound
 (`--provider ROLE=PATH`; a provider probe that succeeded, or a checkout its
 runtime identity records as ready or at a revision, as T097 records set, ppda
 and scr-exchange) or recorded source digests that differ from the installed
@@ -473,9 +486,12 @@ package's is listed as not re-executed, and one that ends in another state or
 with other requirement-probe outcomes as not comparable; neither counts as a
 match. It exits 3 on a mismatch or when no figure was compared. Run on
 Windows against the same `lab/`, it is the second-platform comparison T158
-names as its next step (`.github/workflows/figures.yml` runs it on
-`windows-latest` without providers); run under a forced kernel, it is the
-kernel comparison of CI's `lab-blas-kernels` job:
+reads once retained (`.github/workflows/figures.yml` runs it on
+`windows-latest` with the pinned PLSR installed and bound as `plsr-python`,
+`@python` naming the running interpreter, and without the private CSG, SCR,
+SET and PPDA checkouts, which CI cannot clone; see [Second-platform figure
+records](#second-platform-figure-records)); run under a forced kernel, it is
+the kernel comparison of CI's `lab-blas-kernels` job:
 
 ```sh
 python scripts/check_figures.py --retained lab --output-dir results/figures              # every figure task
@@ -487,6 +503,72 @@ python scripts/check_figures.py --retained lab --output-dir results/figures-wind
     --provider scr-exchange=/trusted/references/scr-exchange \
     --provider plsr-python=/path/to/python3.12   # the providers the retained figure tasks used
 ```
+
+## Second-platform figure records
+
+T158 compares figures on the platform of the run; the comparison on Windows
+enters `lab/` as a retained record of a CI run, never as a queue run:
+
+1. `.github/workflows/figures.yml` runs `scripts/check_figures.py --retained
+   lab` on `windows-latest` against a pushed `lab/` and uploads
+   `figure-check-windows` (`figure-check.json`, `figure-check.md`, the fresh
+   SVGs and reports).
+2. Download the artifact's zip and retain it with the run's provenance as
+   GitHub reports it (`gh api repos/OWNER/REPO/actions/runs/RUN` and
+   `.../artifacts`):
+
+   ```sh
+   python scripts/retain_figure_check.py figure-check-windows.zip --retained lab \
+       --repository OWNER/REPO --workflow .github/workflows/figures.yml --run-id RUN --run-attempt 1 \
+       --head-sha SHA --artifact-id ID --artifact-name figure-check-windows --artifact-digest sha256:HEX
+   ```
+
+   The zip is refused unless it hashes to the declared artifact digest. The
+   script retains `lab/figure-platforms/<record-id>/` (default
+   `<os>-<run id>`): `figure-check.json` and `figure-check.md` with the CRLF
+   line endings a Windows run writes turned into the LF the repository stores,
+   the fresh SVG of each figure the check reports as a mismatch (under
+   `fresh/`) and no other SVG or report, `record.json`
+   (`ciw.lab-figure-platform-record.v1`: repository, workflow, run id and
+   attempt, head commit, artifact id, name and digest, the digest and line
+   endings of both text files as the zip held them, and the check's platform)
+   and `manifest.json` (`ciw.lab-figure-platform-manifest.v1`, the SHA-256 of
+   every other file). The copy must pass verification.
+3. Retain it against the `lab/` it will be committed with, review `git diff
+   lab/figure-platforms` and commit it; `scripts/refresh_lab.py` never touches
+   the directory and, when it holds a record, refuses a run that did not bind
+   one.
+
+`ciw lab verify`, `ciw lab figure-platform verify --retained lab` and
+`scripts/check_lab.py` check each record for integrity only: every file
+matches the manifest and no unrecorded file is present, both text files give
+back the bytes the zip held, both schemas hold, every figure entry agrees with
+its declaration and digests, the summary counts follow from the figure list,
+`record.json` names the check's platform, and a fresh SVG is retained exactly
+for each mismatch. Nothing is re-executed.
+
+T158 reads the record `scripts/check_lab.py` binds as `figure-platform-record`
+(the latest by date, then CI run id). A record that fails verification, or was
+made on the operating system of the run reading it (no second platform), is
+refused by name: T158's record finding is refuted and the second-platform claim
+stays `not_established` with the reason. For a valid record, T158 counts an
+entry only when its retained figure is this run's figure: an undeclared figure
+by its digest, a declared one by what identifies it on every kernel (series
+and points, and a rounding-level figure's recorded values within their
+rounding bounds), so the counts are the same on every OpenBLAS kernel. Entries
+made against other figures (a record older than `lab/`) are listed as not
+current and never counted. Its checks of the record (integrity, platform,
+currency) are `numerically_verified`; the claim that the figures regenerated on
+Windows is `provider_backed`, the CI run's outcome as its record states it
+(the repository at the run's head commit with the CIW package digest it ran),
+and a mismatch the record reports on a current figure refutes it. The value
+names the record's platform (OS, Python, NumPy, OpenBLAS kernel), the outcome
+counts over current entries and the tasks not re-executed there with their
+reasons. A figure compared neither here nor by a current entry (a provider
+task CI could not bind, a stale entry) keeps T158 `partial`, with a next step
+for that gap. The provenance is as declared, the artifact digest is checked
+against the zip only when the record is retained, and the digests are
+unkeyed: a fabricated record that recomputes them passes.
 
 ## Hardware evidence
 

@@ -568,6 +568,16 @@ def test_figure_check_script_reexecutes_a_retained_run_and_compares_every_figure
         "not_reexecuted_tasks": 1, "not_reexecuted_figures": 1, "not_comparable_tasks": 1, "not_comparable_figures": 1}
     # The platform the comparison ran on, for the second-platform record, with the OpenBLAS kernel NumPy runs.
     assert record["platform"]["python"] == platform.python_version() and "blas" in record["platform"]
+    assert record["platform"]["system"] == platform.system()
+    # What identifies a declared figure's retained copy on any kernel, where its bytes do not, so T158 can match a
+    # second-platform record's entries with its own figures; and the summary a record is verified against.
+    from ciw.lab import figure_platform_records
+    identities = {o["path"]: sorted(set(o) & figure_platform_records.IDENTITY_KEYS) for o in record["figures"]}
+    assert identities["artifacts/T013/plot.svg"] == ["retained_structure"]
+    assert identities["artifacts/T033/plot.svg"] == ["retained_structure", "retained_values"]
+    assert identities["artifacts/T010/plot.svg"] == [] and identities["artifacts/T031/extra.svg"] == []
+    recounted = figure_platform_records.recount(record, None)
+    assert {key: record["summary"][key] for key in recounted} == recounted
     core = record["platform"]["blas"]["openblas_core"]
     assert core == openblas_core()
     assert (out / "run" / "reports" / "T010.json").is_file() and not (out / "run" / "reports" / "T030.json").exists()
