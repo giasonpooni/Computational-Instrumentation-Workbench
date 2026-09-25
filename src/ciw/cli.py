@@ -440,6 +440,13 @@ def parser() -> argparse.ArgumentParser:
                                metavar="PATH=VALUE",
                                help="Override model or initial-state value; repeat for independent what-if controls")
     julia_preview.add_argument("--output", type=Path, required=True)
+    julia_sensitivity = julia_actions.add_parser("sensitivity", help="Run a bounded offline educational sensitivity sweep")
+    julia_sensitivity.add_argument("--source", type=Path, required=True)
+    julia_sensitivity.add_argument("--path", required=True, metavar="PATH",
+                                  help="Declared model or initial-state path to vary")
+    julia_sensitivity.add_argument("--value", dest="values", action="append", required=True, type=float,
+                                  help="Sweep value; repeat for two to nine distinct values")
+    julia_sensitivity.add_argument("--output", type=Path, required=True)
     julia_replay = julia_actions.add_parser("replay", help="Replay a retained Julia session with a fresh occurrence")
     julia_replay.add_argument("path", type=Path)
     julia_replay.add_argument("--julia-oscillator-runtime", type=Path, required=True)
@@ -490,6 +497,16 @@ def main(argv: list[str] | None = None) -> int:
                             "preview_id": preview["preview_id"],
                             "base_source_digest": preview["base_source_digest"],
                             "retention": preview["authority"]["retention"]})
+            elif args.julia_command == "sensitivity":
+                from .julia_oscillator import validate_source
+                from .model_education import sensitivity_oscillator
+                source = validate_source(args.source.read_bytes())
+                sweep = sensitivity_oscillator(source, args.path, args.values)
+                write_json(args.output, sweep)
+                print_json({"status": "sensitivity_preview_only", "sweep_file": str(args.output),
+                            "sweep_id": sweep["sweep_id"], "swept_path": sweep["swept_path"],
+                            "case_count": len(sweep["cases"]),
+                            "retention": sweep["authority"]["retention"]})
             else:
                 bindings = {"julia_runtime": args.julia_oscillator_runtime, "julia": args.julia_executable}
                 if args.julia_command == "create":
