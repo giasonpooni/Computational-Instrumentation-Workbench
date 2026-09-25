@@ -10,7 +10,10 @@ host's hardware cannot be); ``ciw lab verify`` (or ``ciw lab hardware verify``
 with ``--no-compare``) checks them for integrity only, and ``gate.json`` names
 them. Retained SP1 proved-heat gate records (``lab/proved-heat/<run-id>/``) are
 likewise checked for integrity only (``ciw lab proved-heat verify`` with
-``--no-compare``); T099 reads the one bound as ``proved-heat-record``.
+``--no-compare``); T099 reads the one bound as ``proved-heat-record``. So are
+retained second-platform figure records (``lab/figure-platforms/<record-id>/``,
+``ciw lab figure-platform verify``); T158 reads the one bound as
+``figure-platform-record``.
 Each binding also reaches the lab tests as the ``CIW_LAB_*`` variable their
 provider-gated tests read. The retained run binds CSG, FTR, SCR, the exchange
 SET, PPDA and SCR checkouts, the telemetry stack and the Python 3.12 PLSR/FTR interpreter; ``scripts/check_lab.py``
@@ -43,7 +46,8 @@ TEST_VARIABLES = {"csg": "CIW_LAB_CSG_REPO", "ftr": "CIW_LAB_FTR_REPO", "scr": "
                   "scr-exchange": "CIW_LAB_SCR_EXCHANGE_REPO", "scr-engine": "CIW_LAB_SCR_ENGINE",
                   "ftr-python": "CIW_LAB_FTR_PYTHON", "plsr-python": "CIW_LAB_PLSR_PYTHON",
                   "proved-heat-record": "CIW_LAB_PROVED_HEAT_RECORD", "telemetry-stack": "CIW_LAB_TELEMETRY_STACK",
-                  "julia": "CIW_LAB_JULIA_EXECUTABLE", "julia-depot": "CIW_LAB_JULIA_DEPOT"}
+                  "julia": "CIW_LAB_JULIA_EXECUTABLE", "julia-depot": "CIW_LAB_JULIA_DEPOT",
+                  "figure-platform-record": "CIW_LAB_FIGURE_PLATFORM_RECORD"}
 # Operator hardware captures the energy tasks read; the gate acquires and analyzes none.
 OPERATOR_CAPTURES = ("CIW_LAB_RAPL_LOG", "CIW_LAB_ENERGY_LOG", "CIW_LAB_NVIDIA_SMI_CSV", "CIW_LAB_NVIDIA_SMI_UTC_OFFSET")
 # The clean room reproduces the packaged queue: interpreter paths, pytest options, queue
@@ -196,6 +200,9 @@ def main() -> int:
         # Proved-heat gate records were made on their recording host; they too are checked for integrity only.
         proved_heat_records = sorted(path.name for path in (args.retained / "proved-heat").iterdir()
                                      if path.is_dir()) if (args.retained / "proved-heat").is_dir() else []
+        # Second-platform figure records were made by a CI run on another platform; checked for integrity only.
+        figure_platform_records = sorted(path.name for path in (args.retained / "figure-platforms").iterdir()
+                                         if path.is_dir()) if (args.retained / "figure-platforms").is_dir() else []
         if not args.no_compare:
             run([python, "-m", "ciw", "lab", "verify", "--retained", str(args.retained.resolve()), "--fresh", str(output)],
                 cwd=work, env=environment)
@@ -206,6 +213,9 @@ def main() -> int:
             if proved_heat_records:
                 run([python, "-m", "ciw", "lab", "proved-heat", "verify", "--retained", str(args.retained.resolve())],
                     cwd=work, env=environment)
+            if figure_platform_records:
+                run([python, "-m", "ciw", "lab", "figure-platform", "verify", "--retained",
+                     str(args.retained.resolve())], cwd=work, env=environment)
     # The record names the bindings the queue and tests received, the clean-room interpreter's version and the
     # OpenBLAS kernel its NumPy ran (None where NumPy's BLAS names none), with the kernel requested, if any.
     (output / "gate.json").write_text(json.dumps({"schema": "ciw.lab-clean-room-gate.v1", "wheel_sha256": wheel_sha256,
@@ -215,6 +225,8 @@ def main() -> int:
                                                    "openblas_core": blas_core, "openblas_coretype": args.blas_core,
                                                    "hardware_runs_verified_for_integrity": hardware_runs,
                                                    "proved_heat_records_verified_for_integrity": proved_heat_records,
+                                                   "figure_platform_records_verified_for_integrity":
+                                                       figure_platform_records,
                                                    "physical_validation": "not_established"}, indent=2) + "\n")
     print(f"PASS: clean-room lab queue from wheel {wheel_sha256[:16]} on OpenBLAS kernel "
           f"{blas_core or '(none reported)'}; reports in {output}")

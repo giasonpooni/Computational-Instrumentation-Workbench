@@ -1433,15 +1433,19 @@ def retain_hardware_run(run_dir, retained, run_id, host) -> dict:
 
 
 def verify_retained(retained, fresh, tasks=None) -> dict:
-    """:func:`compare` plus the integrity of every retained hardware run (``hardware_runs`` in the result) and of
-    every retained proved-heat gate record (``proved_heat_records``)."""
+    """:func:`compare` plus the integrity of every retained hardware run (``hardware_runs`` in the result), of
+    every retained proved-heat gate record (``proved_heat_records``) and of every retained second-platform figure
+    record (``figure_platform_records``)."""
+    from .figure_platform_records import verify_records as verify_figure_records
     from .proved_heat_records import verify_records
     result = compare(retained, fresh, tasks)
     hardware = verify_hardware_runs(retained)
     records = verify_records(retained)
+    figures = verify_figure_records(retained)
     result["hardware_runs"] = {key: hardware[key] for key in ("verified", "runs", "note")}
     result["proved_heat_records"] = {key: records[key] for key in ("verified", "records", "note")}
-    result["problems"] = result["problems"] + hardware["problems"] + records["problems"]
+    result["figure_platform_records"] = {key: figures[key] for key in ("verified", "records", "note")}
+    result["problems"] = result["problems"] + hardware["problems"] + records["problems"] + figures["problems"]
     result["passed"] = not result["problems"]
     return result
 

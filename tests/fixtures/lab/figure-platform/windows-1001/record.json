@@ -1,0 +1,64 @@
+{
+ "artifact_files": {
+  "figure-check.json": {
+   "bytes": 3044,
+   "line_endings": "lf",
+   "sha256": "b953b7d0e131afd048c9bfb03a8abc03f8827084e7641ac877167f278caf37ed"
+  },
+  "figure-check.md": {
+   "bytes": 165,
+   "line_endings": "lf",
+   "sha256": "3e3c1c6e0edb7559e7a677efd205e424781f209412f95230a1b77468db3b4aa8"
+  }
+ },
+ "date": "2026-09-24",
+ "limitations": [
+  "The comparison is the CI run's, as figure-check.json records it; nothing here re-executes a figure task.",
+  "The artifact digest was compared with the downloaded zip when the record was retained; the zip is not kept, and the provenance is as declared by whoever retained it (GitHub's artifact attestation is not checked).",
+  "Figures of tasks the CI run did not re-execute (a provider it could not bind, or sources that differed from the retained run's) are listed with the run's reason and never counted as compared.",
+  "Digests are unkeyed: they detect accidental edits, not who produced the record."
+ ],
+ "note": "Retained second-platform figure records are verified for integrity only: every retained file matches the manifest and no unrecorded file is present, figure-check.json and figure-check.md give back the digests the artifact zip held them with, record.json and figure-check.json follow their schemas and name the same platform, every figure entry is consistent with its declaration and digests, the summary counts agree with the figure list, and a fresh SVG is retained exactly for each mismatched figure. Nothing is re-executed; the digests are unkeyed.",
+ "platform": {
+  "blas": {
+   "blas": {
+    "name": "scipy-openblas",
+    "version": "0.3.31.dev"
+   },
+   "openblas_core": "Haswell",
+   "simd_found": [
+    "X86_V3"
+   ],
+   "thread_variables": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_CORETYPE": null,
+    "OPENBLAS_NUM_THREADS": "1"
+   }
+  },
+  "ciw": {
+   "package_digest": "b656358acbc5609e0ca754279024220be6ca4759bb09820fb7dfb3d3bda9ba87",
+   "version": "0.1.0"
+  },
+  "machine": "AMD64",
+  "numpy": "2.4.3",
+  "platform": "Windows-2025Server-10.0.26100-SP0",
+  "python": "3.12.10",
+  "python_implementation": "CPython",
+  "system": "Windows"
+ },
+ "record_id": "windows-1001",
+ "schema": "ciw.lab-figure-platform-record.v1",
+ "source": {
+  "artifact": {
+   "digest": "sha256:6d8dcc5ed1ca82579c75c46e0bece115283cfe00f29b0f87aec3e7c9c0073114",
+   "id": 2002,
+   "name": "figure-check-windows"
+  },
+  "head_sha": "940a2b68df9328351bcfb4dea2c08028665a72fc",
+  "repository": "example-owner/example-workbench",
+  "run_attempt": 1,
+  "run_id": 1001,
+  "workflow": ".github/workflows/figures.yml"
+ }
+}

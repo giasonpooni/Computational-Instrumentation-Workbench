@@ -1,0 +1,117 @@
+{
+ "figures": [
+  {
+   "fresh_sha256": "70d425c2b50857e1c581356b9fc9c2dc0773ca1d16c64790ff80d86c5b48e72d",
+   "outcome": "identical",
+   "path": "artifacts/T010/plot.svg",
+   "retained_sha256": "70d425c2b50857e1c581356b9fc9c2dc0773ca1d16c64790ff80d86c5b48e72d",
+   "rounding_level": false,
+   "task_id": "T010",
+   "task_sources": {
+    "src/ciw/lab/svg.py": "cacdee4359f8a1c288497d778bc7648fffb6434d2dcb7342977755922afe8080"
+   },
+   "wall_clock_timing": false
+  },
+  {
+   "fresh_sha256": "2eb741f33d1d2835946e36659e4fd096934c28bc4781c065052fca1e864428f8",
+   "outcome": "same structure",
+   "path": "artifacts/T013/plot.svg",
+   "retained_sha256": "832b88ec3c467d5694e92098af077dd9b90f209b442713795eeba6bb4e8f85aa",
+   "retained_structure": {
+    "points": 2,
+    "series": 1
+   },
+   "rounding_level": false,
+   "task_id": "T013",
+   "task_sources": {
+    "src/ciw/lab/svg.py": "cacdee4359f8a1c288497d778bc7648fffb6434d2dcb7342977755922afe8080"
+   },
+   "wall_clock_timing": true
+  },
+  {
+   "fresh_sha256": "18a6ad1b21ba4bae987a68ea41b6b64673780773c89ba4a895a2b8f8fcc3b04a",
+   "outcome": "within rounding bounds",
+   "path": "artifacts/T020/plot.svg",
+   "retained_sha256": "2b8d0c0cefdabd5572c16883a9e7044b432aba4f0889071ca1aeb56657f377d6",
+   "retained_structure": {
+    "points": 2,
+    "series": 1
+   },
+   "retained_values": [
+    {
+     "bound": [
+      1e-09,
+      1e-09
+     ],
+     "name": "a",
+     "x": [
+      1,
+      2
+     ],
+     "y": [
+      1.0,
+      4.0
+     ]
+    }
+   ],
+   "rounding_level": true,
+   "task_id": "T020",
+   "task_sources": {
+    "src/ciw/lab/svg.py": "cacdee4359f8a1c288497d778bc7648fffb6434d2dcb7342977755922afe8080"
+   },
+   "wall_clock_timing": false
+  }
+ ],
+ "not_comparable": {},
+ "not_reexecuted": {
+  "T030": "provider csg not bound here; the retained run used it"
+ },
+ "note": "Synthetic second-platform figure check for the record tests; no figure task ran.",
+ "platform": {
+  "blas": {
+   "blas": {
+    "name": "scipy-openblas",
+    "version": "0.3.31.dev"
+   },
+   "openblas_core": "Haswell",
+   "simd_found": [
+    "X86_V3"
+   ],
+   "thread_variables": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_CORETYPE": null,
+    "OPENBLAS_NUM_THREADS": "1"
+   }
+  },
+  "ciw": {
+   "package_digest": "b656358acbc5609e0ca754279024220be6ca4759bb09820fb7dfb3d3bda9ba87",
+   "version": "0.1.0"
+  },
+  "machine": "AMD64",
+  "numpy": "2.4.3",
+  "platform": "Windows-2025Server-10.0.26100-SP0",
+  "python": "3.12.10",
+  "python_implementation": "CPython",
+  "system": "Windows"
+ },
+ "providers": [],
+ "retained": "lab",
+ "schema": "ciw.lab-figure-check.v1",
+ "summary": {
+  "compared_figures": 3,
+  "compared_tasks": 3,
+  "declared_rounding_level_identical": 0,
+  "declared_rounding_level_within_bounds": 1,
+  "declared_timing_identical": 0,
+  "declared_timing_same_structure": 1,
+  "figure_tasks": 4,
+  "figures": 4,
+  "identical": 1,
+  "mismatched": 0,
+  "not_comparable_figures": 0,
+  "not_comparable_tasks": 0,
+  "not_reexecuted_figures": 1,
+  "not_reexecuted_tasks": 1
+ }
+}

@@ -377,11 +377,13 @@ exception by its type, not its message, when it may name a path.
   network, `pytest.importorskip` for optional modules, env-gated skips for
   providers (`CIW_LAB_<ROLE>_REPO`, `CIW_LAB_<ROLE>_PYTHON`; the
   `telemetry-stack` directory of checkouts is `CIW_LAB_TELEMETRY_STACK`, the
-  Julia runtime and depot `CIW_LAB_JULIA_EXECUTABLE` and `CIW_LAB_JULIA_DEPOT`). The
+  second-platform figure record `CIW_LAB_FIGURE_PLATFORM_RECORD`, the Julia
+  runtime and depot `CIW_LAB_JULIA_EXECUTABLE` and `CIW_LAB_JULIA_DEPOT`). The
   clean-room gate sets these only for the roles `scripts/check_lab.py` binds
   (CSG, FTR, SCR, the exchange SET, PPDA and SCR, the telemetry stack, the
-  retained proved-heat record, the PLSR/FTR interpreter and, when given, the
-  provisioned Julia runtime and depot), through
+  retained proved-heat record, the retained second-platform figure record, the
+  PLSR/FTR interpreter and, when given, the provisioned Julia runtime and
+  depot), through
   `TEST_VARIABLES` in `scripts/reproduce_lab.py`; tests of any other role skip
   in CI. A new role needs its variable in `TEST_VARIABLES` and its provisioning
   in `scripts/check_lab.py` (`REPOSITORIES` and its pin) before its tests run

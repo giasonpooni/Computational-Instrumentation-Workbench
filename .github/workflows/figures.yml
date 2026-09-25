@@ -2,8 +2,10 @@ name: Second-platform figure comparison
 
 # T158 re-executes the figure tasks that fit its time budget on the platform of the retained run; this job
 # re-executes every retained figure task on Windows and compares each figure with the retained copy
-# (scripts/check_figures.py). Tasks whose retained reports used a provider not bound here are listed as not
-# re-executed, never counted as matches.
+# (scripts/check_figures.py), with the pinned PLSR runtime installed and bound as plsr-python. Tasks whose retained
+# reports used a provider not bound here (the private CSG, SCR, SET and PPDA checkouts) are listed as not
+# re-executed, never counted as matches. The uploaded figure-check-windows artifact enters lab/ only through
+# scripts/retain_figure_check.py, as lab/figure-platforms/<record-id>, which T158 reads.
 on:
   push:
     paths:
@@ -25,9 +27,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -e ".[dev,lab]"
+      - run: python -m pip install -e ".[dev,lab,plsr]"
       - name: Re-execute every retained figure task and compare
-        run: python scripts/check_figures.py --retained lab --output-dir results/figures-windows
+        run: python scripts/check_figures.py --retained lab --output-dir results/figures-windows --provider plsr-python=@python
       - uses: actions/upload-artifact@v4
         if: always()
         with:

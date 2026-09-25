@@ -268,7 +268,8 @@ def test_clean_room_tests_see_the_bound_providers(tmp_path, monkeypatch):
         "CIW_LAB_SCR_REPO": str(stack / "scr"), "CIW_LAB_PLSR_PYTHON": str(python),
         "CIW_LAB_FTR_PYTHON": str(python), "CIW_LAB_SET_REPO": None, "CIW_LAB_PPDA_REPO": None,
         "CIW_LAB_SCR_EXCHANGE_REPO": None, "CIW_LAB_SCR_ENGINE": None, "CIW_LAB_PROVED_HEAT_RECORD": None,
-        "CIW_LAB_TELEMETRY_STACK": None, "CIW_LAB_JULIA_EXECUTABLE": None, "CIW_LAB_JULIA_DEPOT": None}
+        "CIW_LAB_TELEMETRY_STACK": None, "CIW_LAB_JULIA_EXECUTABLE": None, "CIW_LAB_JULIA_DEPOT": None,
+        "CIW_LAB_FIGURE_PLATFORM_RECORD": None}
     # A virtual environment's python is a symlink to a base interpreter that lacks the environment's
     # packages (PLSR): the binding is made absolute, never resolved to that interpreter.
     link = Path("plsr-venv") / "bin" / "python"

@@ -24,11 +24,15 @@ comparable; neither is ever counted as a match. ``figure-check.json``
 (``ciw.lab-figure-check.v1``) records every figure's outcome with the platform
 (OS, Python, NumPy, its BLAS and the OpenBLAS kernel it runs, read from the
 loaded library by ``ciw.lab.blas_probe.openblas_core``, with any forced
-``OPENBLAS_CORETYPE``) and ``figure-check.md`` summarizes it; the exit status
-is 3 when a figure mismatches or none was compared. BLAS runs single-threaded
-unless the caller sets its thread variables, as in the clean-room run that
-retained the figures. The record is a reproducibility check, not a lab
-finding, and stays outside ``lab/``.
+``OPENBLAS_CORETYPE``), the source digests of each compared figure's task, and
+for a declared figure what identifies its retained copy on any kernel (its
+series and points, and a rounding-level figure's recorded values);
+``figure-check.md`` summarizes it. The exit status is 3 when a figure
+mismatches or none was compared. BLAS runs single-threaded unless the caller
+sets its thread variables, as in the clean-room run that retained the figures.
+The record is a reproducibility check, not a lab finding; a run on the second
+platform (CI's ``figures.yml``) enters ``lab/figure-platforms/`` only through
+``scripts/retain_figure_check.py``, and T158 reads it there.
 """
 from __future__ import annotations
 
@@ -37,6 +41,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 RECORD_SCHEMA = "ciw.lab-figure-check.v1"
@@ -47,13 +52,14 @@ NOT_RETAINED = "not retained"
 
 
 def bindings(values) -> dict:
-    """``ROLE=PATH`` provider bindings, as ``ciw lab run --provider`` takes them."""
+    """``ROLE=PATH`` provider bindings, as ``ciw lab run --provider`` takes them; the path ``@python`` is this
+    interpreter (``plsr-python=@python`` where the ``plsr`` extra is installed beside ``ciw``)."""
     providers = {}
     for binding in values:
         role, separator, path = binding.partition("=")
         if not separator or not role or not path:
             raise SystemExit(f"Provider bindings use ROLE=PATH, not {binding!r}")
-        providers[role] = Path(path)
+        providers[role] = Path(sys.executable) if path == "@python" else Path(path)
     return providers
 
 
@@ -88,7 +94,8 @@ def platform_identity() -> dict:
 
     import ciw
     from ciw.lab import runner
-    return {"platform": platform.platform(), "machine": platform.machine(), "python": platform.python_version(),
+    return {"platform": platform.platform(), "system": platform.system(), "machine": platform.machine(),
+            "python": platform.python_version(),
             "python_implementation": platform.python_implementation(), "numpy": np.__version__,
             "blas": blas_identity(), "ciw": {"version": ciw.__version__, "package_digest": runner.package_digest()}}
 
@@ -113,18 +120,12 @@ def _probes(report) -> dict:
 def not_reexecuted(report, providers) -> str | None:
     """Why a retained figure task is not re-executed here: a provider it used is unbound, or its sources changed."""
     from ciw.lab import runner
-    from ciw.lab.research_portfolio import providers_used
+    from ciw.lab.research_portfolio import providers_used, task_sources
     unbound = [role for role in providers_used(report) if role not in providers]
     if unbound:
         return f"provider {', '.join(unbound)} not bound here; the retained run used it"
-    identity = report.get("provider_runtime_identity")
-    identity = identity if isinstance(identity, dict) else {}
     # Provider-backed tasks (T005, T008, T097) record their CIW sources under "ciw", beside the provider's identity.
-    sources = {}
-    for record in (identity, identity.get("ciw")):
-        if isinstance(record, dict) and isinstance(record.get("sources"), dict):
-            sources.update(record["sources"])
-    changed = sorted(name for name, digest in sources.items() if runner.source_digest(name) != digest)
+    changed = sorted(name for name, digest in task_sources(report).items() if runner.source_digest(name) != digest)
     if changed:
         return "sources differ from the retained run's: " + ", ".join(changed)
     return None
@@ -135,14 +136,34 @@ def _declared(artifact) -> dict:
     return {key: artifact.get(key) is True for key in FIGURE_DECLARATIONS}
 
 
+def retained_identity(data: bytes, declared: dict) -> dict:
+    """What identifies a declared figure's retained copy on every kernel and platform, where its bytes do not: the
+    series and points of a wall-clock timing or rounding-level figure and a rounding-level figure's recorded values
+    with their rounding bounds. T158 matches a second-platform record's entries with its own figures by these
+    (``ciw.lab.figure_platform_records``); an undeclared figure is matched by its digest."""
+    from ciw.lab import svg
+    from ciw.lab.report import ROUNDING_LEVEL, WALL_CLOCK_TIMING
+    from ciw.lab.research_portfolio import figure_structure
+    identity = {}
+    if declared[WALL_CLOCK_TIMING] or declared[ROUNDING_LEVEL]:
+        identity["retained_structure"] = figure_structure(data)
+    if declared[ROUNDING_LEVEL]:
+        identity["retained_values"] = svg.recorded_values(data)
+    return {key: value for key, value in identity.items() if value is not None}
+
+
 def compare_task(retained_dir: Path, fresh_dir: Path, old, new) -> tuple[list, str | None]:
     """The figure outcomes of one re-executed task, or why its figures are not comparable.
 
     A figure's declaration is read from the retained report, so a declaration a task adds takes effect once its
-    report is retained again.
+    report is retained again. Each outcome names the task's source digests (``task_sources``: the retained report's,
+    which the installation that re-executed it has, see :func:`not_reexecuted`), so that T158 counts it only for a
+    run whose report of the task records the same sources.
     """
     from ciw.lab.report import ROUNDING_LEVEL, WALL_CLOCK_TIMING
-    from ciw.lab.research_portfolio import compare_figure
+    from ciw.lab.research_portfolio import compare_figure, task_sources
+    sources = task_sources(old)
+    code = {"task_sources": sources} if sources else {}
     if old["state"] != new["state"]:
         return [], f"state {old['state']} -> {new['state']}"
     before, after = _probes(old), _probes(new)
@@ -154,14 +175,14 @@ def compare_task(retained_dir: Path, fresh_dir: Path, old, new) -> tuple[list, s
     outcomes = []
     for artifact in _figures(old):
         path, declared = artifact["path"], _declared(artifact)
-        fresh = (fresh_dir / path).read_bytes() if path in written else None
-        outcome = compare_figure((retained_dir / path).read_bytes(), fresh, declared[WALL_CLOCK_TIMING],
-                                 rounding_level=declared[ROUNDING_LEVEL])
+        retained, fresh = (retained_dir / path).read_bytes(), (fresh_dir / path).read_bytes() if path in written else None
+        outcome = compare_figure(retained, fresh, declared[WALL_CLOCK_TIMING], rounding_level=declared[ROUNDING_LEVEL])
         outcomes.append({"task_id": old["task_id"], "path": path, **declared, "outcome": outcome,
-                         "retained_sha256": artifact["sha256"], "fresh_sha256": written.get(path, {}).get("sha256")})
+                         "retained_sha256": artifact["sha256"], "fresh_sha256": written.get(path, {}).get("sha256"),
+                         **retained_identity(retained, declared), **code})
     for path in sorted(set(written) - {artifact["path"] for artifact in _figures(old)}):
         outcomes.append({"task_id": old["task_id"], "path": path, **_declared(written[path]), "outcome": NOT_RETAINED,
-                         "retained_sha256": None, "fresh_sha256": written[path]["sha256"]})
+                         "retained_sha256": None, "fresh_sha256": written[path]["sha256"], **code})
     return outcomes, None
 
 
@@ -277,9 +298,11 @@ def main() -> int:
               "summary": summarize(reports, outcomes, skipped, not_comparable), "figures": outcomes,
               "not_reexecuted": skipped, "not_comparable": not_comparable}
     output.mkdir(parents=True, exist_ok=True)
-    (output / "figure-check.json").write_text(json.dumps(record, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    # LF on every platform, as the repository stores a retained record (scripts/retain_figure_check.py).
+    (output / "figure-check.json").write_text(json.dumps(record, indent=1, sort_keys=True) + "\n", encoding="utf-8",
+                                              newline="\n")
     summary = render(record)
-    (output / "figure-check.md").write_text(summary, encoding="utf-8")
+    (output / "figure-check.md").write_text(summary, encoding="utf-8", newline="\n")
     print(summary, end="")
     counts = record["summary"]
     if counts["mismatched"] or not counts["compared_figures"]:

@@ -459,8 +459,8 @@ def parser() -> argparse.ArgumentParser:
     lab_next.add_argument("--provider", action="append", default=[], metavar="ROLE=PATH")
     lab_next.add_argument("--limit", type=int, default=10, help="Rows ranked in 'next'; every refinement is listed")
     lab_verify = lab_actions.add_parser("verify", help="Compare regenerated reports with retained ones and check "
-                                                       "retained hardware runs and proved-heat gate records for "
-                                                       "integrity")
+                                                       "retained hardware runs, proved-heat gate records and "
+                                                       "second-platform figure records for integrity")
     lab_verify.add_argument("--retained", type=Path, required=True)
     lab_verify.add_argument("--fresh", type=Path, required=True)
     lab_hardware = lab_actions.add_parser("hardware", help="Retain and verify operator hardware runs")
@@ -488,6 +488,13 @@ def parser() -> argparse.ArgumentParser:
     proved_verify = proved_actions.add_parser(
         "verify", help="Check every retained proved-heat gate record for integrity; no proof is re-verified")
     proved_verify.add_argument("--retained", type=Path, required=True)
+    lab_figure_platform = lab_actions.add_parser(
+        "figure-platform", help="Verify retained second-platform figure records (scripts/retain_figure_check.py "
+                                "retains them)")
+    figure_platform_actions = lab_figure_platform.add_subparsers(dest="figure_platform_command", required=True)
+    figure_platform_verify = figure_platform_actions.add_parser(
+        "verify", help="Check every retained second-platform figure record for integrity; nothing is re-executed")
+    figure_platform_verify.add_argument("--retained", type=Path, required=True)
     lab_unmeasured = lab_actions.add_parser(
         "unmeasured", help="List what remains unmeasured: the main run's count beside each retained hardware run's, "
                            "never merged; runs nothing")
@@ -797,6 +804,12 @@ def main(argv: list[str] | None = None) -> int:
                     print_json(result)
                     if not result["passed"]:
                         return 3
+            elif args.lab_command == "figure-platform":
+                from .lab import figure_platform_records
+                result = figure_platform_records.verify_records(args.retained)
+                print_json(result)
+                if not result["passed"]:
+                    return 3
             elif args.lab_command == "report":
                 path = args.retained / "reports" / f"{args.task}.json"
                 from .lab.report import render_markdown, validate_report

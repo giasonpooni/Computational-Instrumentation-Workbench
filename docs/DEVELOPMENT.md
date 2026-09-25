@@ -217,6 +217,22 @@ ciw lab proved-heat retain results/proved-heat --retained lab --run-id local-<da
 ciw lab proved-heat verify --retained lab
 ```
 
+It binds the latest second-platform figure record
+(`lab/figure-platforms/<record-id>/`) for T158 as well. To add one, let
+`figures.yml` run `scripts/check_figures.py` on Windows against the pushed
+`lab/`, download its `figure-check-windows` artifact as a zip and retain it
+with the run's provenance; the zip is refused unless it hashes to the
+artifact digest GitHub reports (see
+[LAB.md](LAB.md#second-platform-figure-records)):
+
+```sh
+gh api repos/OWNER/REPO/actions/artifacts/ID/zip > figure-check-windows.zip
+python scripts/retain_figure_check.py figure-check-windows.zip --retained lab --repository OWNER/REPO \
+    --workflow .github/workflows/figures.yml --run-id RUN --run-attempt 1 --head-sha SHA \
+    --artifact-id ID --artifact-name figure-check-windows --artifact-digest sha256:HEX
+ciw lab figure-platform verify --retained lab
+```
+
 ## Documenting an integrated tool
 
 Update the README catalogue and [INSTRUMENTS.md](INSTRUMENTS.md) when a supported

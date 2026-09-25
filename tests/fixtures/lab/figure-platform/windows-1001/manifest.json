@@ -1,0 +1,19 @@
+{
+ "files": {
+  "figure-check.json": {
+   "bytes": 3044,
+   "sha256": "b953b7d0e131afd048c9bfb03a8abc03f8827084e7641ac877167f278caf37ed"
+  },
+  "figure-check.md": {
+   "bytes": 165,
+   "sha256": "3e3c1c6e0edb7559e7a677efd205e424781f209412f95230a1b77468db3b4aa8"
+  },
+  "record.json": {
+   "bytes": 2628,
+   "sha256": "b11fb9905826c65d8417f266384ee6dcd62587c294ba250ff4eb296ccd042751"
+  }
+ },
+ "note": "SHA-256 and size of every file of this record except this manifest",
+ "record_id": "windows-1001",
+ "schema": "ciw.lab-figure-platform-manifest.v1"
+}

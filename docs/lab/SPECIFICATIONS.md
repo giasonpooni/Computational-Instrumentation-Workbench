@@ -362,10 +362,27 @@ wrong aggregate, never by re-reading what was just written:
   `figure-index.json` alone, so that T158's findings, labels and prose are the
   same on every kernel; any other figure that differs, a figure no longer
   written, a declared figure whose structure differs and a rounding-level
-  figure whose values move beyond their bounds refute it; figures not
-  re-executed leave the task `partial` (`scripts/check_figures.py`
-  re-executes all of them outside the queue, on any platform and forced
-  OpenBLAS kernel, and counts the two declarations apart);
+  figure whose values move beyond their bounds refute it
+  (`scripts/check_figures.py` re-executes all of them outside the queue, on
+  any platform and forced OpenBLAS kernel, and counts the two declarations
+  apart). With a second-platform record bound (`figure-platform-record`: a CI
+  run of `scripts/check_figures.py` on another operating system, retained
+  under `lab/figure-platforms/`), T158 verifies it (manifest, schemas, summary
+  recounted from its figure list, text files giving back the artifact's bytes)
+  and refuses one made on the run's own operating system; it counts the
+  record's outcomes only over entries whose retained figure is the run's (an
+  undeclared figure by its digest, a declared one by its series and points and
+  recorded values within their rounding bounds, so that the count is the same
+  on every kernel) and whose task source digests, recorded by
+  `scripts/check_figures.py`, are those the run's report of the task records.
+  A rounding-level figure agrees there within its rounding bounds with the
+  record's retained copy, itself within those bounds of the run's figure. The
+  record checks are `numerically_verified`, the regeneration on the second
+  platform is `provider_backed` (the CI run's outcome as recorded) and a
+  mismatch the record reports on a current figure refutes it. A figure
+  compared neither by re-execution here nor by a current entry of a valid
+  record leaves the task `partial`, and the next step names what keeps it
+  partial before a third platform;
 - for T168, a static tie analysis (a registered test, or its parametrized
   case, declares its task with a `lab_task` marker and mentions an evidence
   label; markers naming a task that does not register what they mark are
