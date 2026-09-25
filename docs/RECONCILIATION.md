@@ -328,7 +328,7 @@ uncertainty representation; in-terminal plots.
 - `python -m pytest -q` (Python 3.11, no external checkouts) on the
   `claude/sleepy-planck-mar1u3` branch after the retained-workspace compatibility
   gate, kernel probe, verification verb, CLI gap tests, audit hardening and
-  the identity, record, validator and session check tables: **1705 passed,
+  the identity, record, validator, covariance and session check tables: **1740 passed,
   577 skipped, 38 subtests passed**; the same suite runs green in Prototype
   checks on Ubuntu and Windows for Python 3.11 and 3.12, while the PLSR
   terminal job and the provider gates stay red until the private providers are
@@ -377,7 +377,11 @@ uncertainty representation; in-terminal plots.
   asserted only that an error came back and never which one;
   `tests/test_session_checks.py` now names the code and message of each:
   73 of the 79 are killed and the six that survive are listed in the gate
-  as repeated by a neighbouring check. Over the
+  as repeated by a neighbouring check. Over the shared covariance artifact
+  validator (`core.covariance`, reused by every kind that retains a
+  covariance) 37 of 39 checks were unguarded;
+  `tests/test_covariance_artifact_checks.py` now kills all but the two the
+  gate lists as redundant. Over the
   identified-design declaration validator (a provider-backed kind whose
   retention checks were added during this audit) 146 of 152 checks are
   still unguarded, over the machine manifest artifact validator

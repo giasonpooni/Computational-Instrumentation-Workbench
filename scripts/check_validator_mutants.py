@@ -42,6 +42,8 @@ TARGETS = {
                          ["tests/test_machine_source_checks.py", "tests/test_machine_workflow.py"]),
     "project_workflow": ("src/ciw/project_workflow.py",
                          ["tests/test_project_source_checks.py", "tests/test_project_workflow.py"]),
+    "covariance": ("src/ciw/core/covariance.py",
+                   ["tests/test_covariance_artifact_checks.py", "tests/test_covariance_records.py"]),
     "session": ("src/ciw/session.py",
                 ["tests/test_session_checks.py", "tests/test_audit_hardening.py", "tests/test_replay.py",
                  "tests/test_protocol.py"]),
@@ -65,6 +67,12 @@ EQUIVALENT = {
     "consistency_math": {
         # NaN and infinities also fail the unit-interval comparison beside this clause.
         "not math.isfinite(x)",
+    },
+    "covariance": {
+        # Any identity that is not the recomputed content identity already fails the equality clause.
+        '_CONTENT_ID.fullmatch(artifact["covariance_id"]) is None',
+        # A nonfinite correlation entry is refused before the eigenvalues are computed.
+        "not np.all(np.isfinite(eigenvalues))",
     },
     "session": {
         # calibration_status repeats this check with the same message before the value is used.
