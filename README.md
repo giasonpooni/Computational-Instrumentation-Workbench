@@ -52,6 +52,7 @@ evidence live in [INSTRUMENTS.md](docs/INSTRUMENTS.md) and
 | --- | --- |
 | Terminal and Python session | Implemented local service, operation dispatch, persistence and replay. |
 | Synthetic instrumentation | Analytic oscillator with statistics, spectrum, saved results and reopening. |
+| Mathematical education and augmentation | Equation cards, declared assumptions and bounded offline what-if previews tied to the Julia oscillator seam. |
 | Measurement and estimation | Pinned RCI/FSRT/JSPT, telemetry, calibrated-process and identified-design paths. |
 | Numerical geometry | Native bounded covariance, mesh-path and translation-flow providers, plus pinned flat-torus and curved-surface references. |
 | Stability and proof | PLSR terminal operation and selected SCR/SP1 registered computation with qualified scopes. |
@@ -121,6 +122,8 @@ measurement/design session, follow [WORKBENCH_ASSEMBLY.md](docs/WORKBENCH_ASSEMB
 and the [quickstart](docs/quickstart.md). Container and workstation deployment
 notes are in [deploy/README.md](deploy/README.md).
 The command-only oscillator walkthrough is [OSCILLATOR_OPERATOR.md](docs/OSCILLATOR_OPERATOR.md).
+The equation cards and bounded model previews are described in
+[MODEL_EXPLORATION.md](docs/MODEL_EXPLORATION.md).
 
 ## Evidence boundaries
 
@@ -161,6 +164,7 @@ matrix and [SYSTEMS_CATALOG.md](docs/SYSTEMS_CATALOG.md) for provider status.
 | Provider and loose-tool map | [Systems catalog](docs/SYSTEMS_CATALOG.md) |
 | Implementation architecture | [Architecture](docs/ARCHITECTURE.md) |
 | Operation catalogue | [Instruments](docs/INSTRUMENTS.md) |
+| Mathematical model exploration | [Model exploration](docs/MODEL_EXPLORATION.md) |
 | Executable coverage and limits | [Integration coverage](docs/INTEGRATION_COVERAGE.md) |
 | Shared assembly and deployment | [Workbench assembly](docs/WORKBENCH_ASSEMBLY.md) |
 | Typed contracts and exchange | [Contract foundations](docs/CONTRACT_FOUNDATIONS.md) |
@@ -176,3 +180,4 @@ integration matrix or provider manifests.
 
 This project is licensed under the GNU Affero General Public License v3.0 only
 (AGPL-3.0-only). See the published repository's [LICENSE](https://github.com/giasonpooni/Notation-Systems-Workbench/blob/main/LICENSE).
+

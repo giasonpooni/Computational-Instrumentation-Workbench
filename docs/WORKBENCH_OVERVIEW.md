@@ -70,7 +70,7 @@ The executable persistence and admission rules are in
 | Terminal and Python API | Authoritative local session, operation dispatch, saved workspaces and replay. |
 | Optional Godot client | Read-only 2D/3D representations of supported retained data; it is not a second state store. |
 | Provider processes | Explicitly pinned numerical engines invoked outside the session lock. |
-| Julia direction | The bounded Tsit5 oscillator provider seam is registered with retained replay and a Python oracle; the generated Julia environment and Godot headless gates remain explicit. Broader JuliaControl/JuMP scientific-core work is still planned. |
+| Julia direction | The bounded Tsit5 oscillator provider seam is registered with retained replay and a Python oracle. Its inspection view now includes equations, assumptions and a bounded offline what-if preview; the generated Julia environment and Godot headless gates remain explicit. Broader JuliaControl/JuMP scientific-core work is still planned. |
 | GPU and machine interfaces | Captured through bounded providers and host-side telemetry; deadline-critical protection remains local to the machine. |
 | MCP and agents | Optional tools at the workbench boundary. They propose or inspect work; deterministic contracts decide acceptance. |
 
@@ -145,3 +145,4 @@ repository link into an implemented integration.
 See [SYSTEMS_CATALOG.md](SYSTEMS_CATALOG.md) for the provider map and
 [DEVELOPMENT.md](DEVELOPMENT.md) for the delivery checklist. The stack-level
 ownership and numerical boundaries remain in [STACK.md](STACK.md).
+

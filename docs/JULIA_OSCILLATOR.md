@@ -65,6 +65,12 @@ recording that can be opened by the existing read-only Godot phase/state
 viewport. The viewport derives its trajectory and channel list from the
 retained record; it never becomes a numerical source.
 
+For mathematical teaching and bounded model exploration, see
+[MODEL_EXPLORATION.md](MODEL_EXPLORATION.md). An `experiment.inspect` view
+includes an equation and assumption card, while `julia-oscillator preview`
+creates a clearly hypothetical analytic what-if file without assigning an
+execution or result identity.
+
 ## Current gate status
 
 The Python contract, framing parser, oracle comparison, raw-byte retention,
@@ -72,3 +78,4 @@ offline validation and replay identity checks are implemented and covered by
 `tests/test_julia_oscillator.py`. Genuine Julia execution, generated-manifest
 identity, cross-platform replay, and headless Godot execution remain release
 gates until the external runtimes are provisioned on the operator machine.
+

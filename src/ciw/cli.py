@@ -434,6 +434,12 @@ def parser() -> argparse.ArgumentParser:
                              help="Optional run.v1 trajectory projection for the read-only Godot viewport")
     julia_inspect = julia_actions.add_parser("inspect", help="Inspect a retained Julia session without Julia")
     julia_inspect.add_argument("path", type=Path)
+    julia_preview = julia_actions.add_parser("preview", help="Run a bounded offline educational what-if preview")
+    julia_preview.add_argument("--source", type=Path, required=True)
+    julia_preview.add_argument("--set", dest="overrides", action="append", default=[],
+                               metavar="PATH=VALUE",
+                               help="Override model or initial-state value; repeat for independent what-if controls")
+    julia_preview.add_argument("--output", type=Path, required=True)
     julia_replay = julia_actions.add_parser("replay", help="Replay a retained Julia session with a fresh occurrence")
     julia_replay.add_argument("path", type=Path)
     julia_replay.add_argument("--julia-oscillator-runtime", type=Path, required=True)
@@ -473,6 +479,17 @@ def main(argv: list[str] | None = None) -> int:
             if args.julia_command == "inspect":
                 julia_workflow._validate(json.loads(args.path.read_bytes().decode("utf-8")))
                 print_json({"status": "inspectable", "schema": "ciw.julia-oscillator-session.v1"})
+            elif args.julia_command == "preview":
+                from .julia_oscillator import validate_source
+                from .model_education import parse_overrides, preview_oscillator
+                raw = args.source.read_bytes()
+                source = validate_source(raw)
+                preview = preview_oscillator(source, parse_overrides(args.overrides))
+                write_json(args.output, preview)
+                print_json({"status": "preview_only", "preview_file": str(args.output),
+                            "preview_id": preview["preview_id"],
+                            "base_source_digest": preview["base_source_digest"],
+                            "retention": preview["authority"]["retention"]})
             else:
                 bindings = {"julia_runtime": args.julia_oscillator_runtime, "julia": args.julia_executable}
                 if args.julia_command == "create":
@@ -749,3 +766,4 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, RuntimeError, TimeoutError, WebSocketException) as exc:
         print(f"ciw: {exc}", file=sys.stderr)
         return 2
+

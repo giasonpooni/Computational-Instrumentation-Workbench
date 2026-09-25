@@ -19,6 +19,7 @@ imports `ciw`, and the command-line entry point is also `ciw`.
 | Current executable paths and remaining gates | [Integration coverage](INTEGRATION_COVERAGE.md) |
 | User-facing instruments and exact commands | [Instrument catalogue](INSTRUMENTS.md) |
 | Oscillator demo, inspection and reopen commands | [Oscillator operator card](OSCILLATOR_OPERATOR.md) |
+| Equations, assumptions and bounded what-if previews | [Mathematical model exploration](MODEL_EXPLORATION.md) |
 
 ## Contracts and operations
 
@@ -47,3 +48,4 @@ imports `ciw`, and the command-line entry point is also `ciw`.
 
 Historical audits remain linked from the root for context. They do not override
 the current operation catalogue, integration matrix or provider manifests.
+

@@ -103,12 +103,15 @@ def project(record, source, declaration, revision):
                              frame=position["frame"], time_basis=position["time_basis"],
                              uncertainty_scope=context["uncertainty_scope"], claim_scope=data["claim_scope"]))
     elif kind == "julia-oscillator":
+        from .model_education import oscillator_model_card
+        card = oscillator_model_card(declaration, data, provenance)
         context.update(summary="Julia OrdinaryDiffEqTsit5 trajectory against analytic oracle",
                        solver=deepcopy(data["output"]["solver"]),
                        oracle_comparison=deepcopy(data["oracle_comparison"]),
                        claim_scope=data["authority"]["claim_scope"],
                        physical_validation=data["authority"]["physical_validation"],
-                       measurement_uncertainty=data["authority"]["measurement_uncertainty"])
+                       measurement_uncertainty=data["authority"]["measurement_uncertainty"],
+                       educational_model=card)
         panels.append(_panel("trajectory", "Julia oscillator trajectory", ["q", "v", "energy"],
                              [data["output"]["q_m"][0], data["output"]["v_m_s"][0], data["output"]["energy_j"][0]],
                              ["m", "m/s", "J"], None,
@@ -124,3 +127,4 @@ def project(record, source, declaration, revision):
         "verification": native["verification"], "runtimes": native["runtimes"],
         "authority": {"read_only": True, "numerical_replay": "not_performed_by_inspection", "state_admission": "not_performed",
                       **({"cryptographic_verification": "not_performed_by_inspection"} if kind == "proved-heat" else {})}})
+

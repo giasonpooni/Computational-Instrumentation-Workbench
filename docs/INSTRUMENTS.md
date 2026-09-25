@@ -16,7 +16,7 @@ existing benches.
 | Tool and role | Workbench status | Entry point |
 | --- | --- | --- |
 | `analytic-damped-oscillator.v1` | Integrated built-in synthetic instrument | `python -m ciw demo`, `analyze stats`, `analyze spectrum` |
-| `ciw.julia-oscillator.v1` | Typed Julia `OrdinaryDiffEqTsit5` provider seam; Python analytic oracle and retained replay are implemented, external runtime gate remains explicit | `ciw julia-oscillator create`, `inspect`, `replay`; [Julia operating guide](JULIA_OSCILLATOR.md) |
+| `ciw.julia-oscillator.v1` | Typed Julia `OrdinaryDiffEqTsit5` provider seam; Python analytic oracle and retained replay are implemented, external runtime gate remains explicit. Inspection includes an educational model card; offline what-if previews remain hypothetical until submitted as a new execution. | `ciw julia-oscillator create`, `inspect`, `preview`, `replay`; [Julia operating guide](JULIA_OSCILLATOR.md), [model exploration](MODEL_EXPLORATION.md) |
 | RCI measurement-chain/calibration adapter | Integrated experimental pinned subprocess; synthetic mass fixture | `python -m ciw investigation create`, `inspect`, `replay` |
 | FSRT state-estimation operation | Integrated experimental pinned subprocess; one simultaneous two-reservoir snapshot | Same investigation; shared `operation.execute` after explicit runtime binding |
 | Parameterized Lyapunov Stability Runtime (PLSR) verification operation | Integrated experimental terminal operation; Python 3.12+ and optional `plsr` extra | `python -m ciw plsr import`, `evaluate`, `inspect`, `replay` |
@@ -382,3 +382,4 @@ setup and workbench commands, input ordering/units/time conventions, versioned
 output and status semantics, saved-evidence and replay instructions, verification
 state and limits, and links to validation evidence. A successful installation or
 standalone example alone does not establish a completed workbench integration.
+
