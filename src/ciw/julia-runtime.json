@@ -1,0 +1,53 @@
+{
+  "julia_version": "1.10.12",
+  "manifest": {
+    "path": "Manifest.toml",
+    "project_hash": "350d718234b1a64d4855247e7b550cdb69b96508",
+    "sha256": "998ba18fda767d1062c456a4d2ad322c358c94dd66e35080523270dbbf3bfdf6"
+  },
+  "operations": [
+    "ciw.julia-oscillator.integrate.v1"
+  ],
+  "packages": {
+    "DiffEqBase": {
+      "git_tree_sha1": "bf9fd5ccecbc0b49ca037b49230305240282e936",
+      "uuid": "2b5f629d-d688-5b77-993f-72d75c75574e",
+      "version": "7.21.2"
+    },
+    "OrdinaryDiffEqCore": {
+      "git_tree_sha1": "0f380e153b65ef6cbc0f1b5aeed3d66e42b6cacc",
+      "uuid": "bbf590c4-e513-4bbe-9b18-05decba2e5d8",
+      "version": "4.18.0"
+    },
+    "OrdinaryDiffEqTsit5": {
+      "git_tree_sha1": "2fdf22d85a4c35e913d8b746480167e0206cf0c3",
+      "uuid": "b1df2697-797e-41e3-8120-5422d3b24e4a",
+      "version": "2.1.4"
+    },
+    "SHA": {
+      "git_tree_sha1": null,
+      "uuid": "ea8e919c-243c-51af-8825-aaa63cd721ce",
+      "version": "0.7.0"
+    },
+    "SciMLBase": {
+      "git_tree_sha1": "d1bf74bfadd6356a09ba0f40baa866305ee533f5",
+      "uuid": "0bca4576-84f4-4d90-8ffe-ffa030f20462",
+      "version": "3.56.0"
+    },
+    "TOML": {
+      "git_tree_sha1": null,
+      "uuid": "fa267f1f-6049-4f14-aa54-33bafae1ed76",
+      "version": "1.0.3"
+    }
+  },
+  "project": {
+    "path": "Project.toml",
+    "sha256": "6152682841f68dfde1413f82f21b140c3936bfb18b63053bba45d1aeb16c3526"
+  },
+  "protocol_version": 1,
+  "schema": "ciw.julia-runtime-pin.v1",
+  "worker": {
+    "path": "worker/oscillator_worker.jl",
+    "sha256": "2124ea884b618bcb96cae8a830e1972f39a83249cfc9129b08354a12c4c0686f"
+  }
+}
