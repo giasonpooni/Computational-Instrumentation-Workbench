@@ -27,8 +27,10 @@ const PACKAGES = [
     Base.PkgId(Base.UUID("ea8e919c-243c-51af-8825-aaa63cd721ce"), "SHA"),
 ]
 for id in PACKAGES
-    if !(Base.in_sysimage(id) || Base.isprecompiled(id))
-        println(stderr, "ciw-julia-worker: ", id.name, " is not precompiled in the bound depot; run scripts/provision_julia.py")
+    # Exit code 70: the bound depot does not hold the provisioned environment (a package missing or not precompiled).
+    if !(Base.in_sysimage(id) || (Base.locate_package(id) !== nothing && Base.isprecompiled(id)))
+        println(stderr, "ciw-julia-worker: ", id.name, " is not installed and precompiled in the bound depot; ",
+                "run scripts/provision_julia.py")
         exit(70)
     end
 end

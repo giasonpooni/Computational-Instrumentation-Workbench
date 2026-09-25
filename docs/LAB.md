@@ -322,8 +322,9 @@ since the clean room has no copy of `lab/`, so T099 reads the same record there
 (see [Proved-heat gate records](#proved-heat-gate-records)). Like the rustup
 toolchain T099 rebuilds with, the Julia 1.10.12 runtime T145's worker runs on is
 installed outside the gate: `python scripts/provision_julia.py --prefix P --depot D`
-downloads the pinned archive, checks it against Julia's checksum file,
-instantiates and precompiles the committed worker environment and prints the
+downloads the pinned archive, checks it against Julia's checksum file and the
+extracted runtime against the pin's digests, instantiates and precompiles the
+committed worker environment and prints the
 bindings, which `check_lab.py --julia P/julia-1.10.12/bin/julia --julia-depot D`
 passes as the roles `julia` and `julia-depot` (`CIW_LAB_JULIA_EXECUTABLE`,
 `CIW_LAB_JULIA_DEPOT`; see [IMPLEMENTATION_TARGETS](lab/IMPLEMENTATION_TARGETS.md#julia)).

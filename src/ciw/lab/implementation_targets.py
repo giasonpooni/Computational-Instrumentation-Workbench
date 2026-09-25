@@ -704,12 +704,15 @@ JULIA_PLAN = {
                       "(src/ciw/lab/julia/julia-runtime.json)",
     "steps": [
         "Provision separately from execution: scripts/provision_julia.py downloads the official archive, checks it "
-        "against the pin and Julia's checksum file, instantiates the committed Manifest into a depot and precompiles it",
+        "against the pin and Julia's checksum file and the extracted runtime tree against the pin's digests, "
+        "instantiates the committed Manifest into a depot and precompiles it",
         "Bind the executable and the depot explicitly: --provider julia=<julia executable> "
         "--provider julia-depot=<depot>",
         "Start the worker with --project=<packaged environment> --startup-file=no --threads=1, JULIA_DEPOT_PATH=<depot> "
         "and JULIA_LOAD_PATH=@ and @stdlib; it refuses to start on an environment that was not precompiled",
-        "Compare the handshake field by field with the expected identity before any request",
+        "Compare the handshake field by field with the expected identity before any request, and read the bound "
+        "executable, runtime tree and system image (against the pin) and the depot's package sources (against the "
+        "committed Manifest's git trees) on the host",
         "Dispatch the oscillator fixtures through SCR's SpecificationDispatcher with the worker as its runner; retain "
         "the exact frames and recompute SCR's commitments from them",
         "Accept the oscillator operation only after the analytic-oracle fixtures pass on Windows and Linux",
@@ -814,11 +817,16 @@ def _scr_binding(ctx) -> dict:
                                    "source_tree": identity["tree"], "executed": True}}}
 
 
-def _julia_unbound(ctx, symbolic, symbolic_findings, reason: str):
-    """Today's findings when no Julia worker can run: the pin procedure as a derivation and the SCR claim open."""
+def _julia_unbound(ctx, symbolic, symbolic_findings, reason: str, started: bool = False):
+    """Today's findings when no Julia worker can serve: the pin procedure as a derivation and the SCR claim open.
+
+    ``started``: a bound worker was started but refused at (or exited before) its handshake, so no request reached it.
+    """
+    outcome = "no request was sent to a Julia worker" if started else "no Julia process ran"
+    headline = "Julia worker served no request" if started else "Julia worker not run"
     findings = [finding(JULIA_SCR_CLAIM, "computational_pipeline", None,
                         {"notes": f"The Julia worker, its handshake and the SCR dispatch path exist, but {reason}, so "
-                                  "no Julia process ran and no Julia finding is established"},
+                                  f"{outcome} and no Julia finding is established"},
                         expected_not_established=True),
                 finding(JULIA_PIN_CLAIM, "provenance", JULIA_PLAN["identity_fields"],
                         {"derivation": "docs/JULIA_SP1.md#worker-lifecycle-and-environment"}, uncertainty=DESIGN_U,
@@ -829,18 +837,20 @@ def _julia_unbound(ctx, symbolic, symbolic_findings, reason: str):
         "Pin procedure from docs/JULIA_SP1.md; symbolic Christoffel symbols Gamma^k_ij = 1/2 g^kl (d_i g_jl + d_j g_il "
         "- d_l g_ij) and K = -(1/2W)[d_phi(G_phi/W) + d_theta(E_theta/W)], W = sqrt(EG), for the torus embedding.",
         ["Torus R=2, r=1", "16 PCG64(145) chart points", "docs/JULIA_SP1.md", "src/ciw/lab/julia/julia-runtime.json"],
-        "Symbolic derivation evaluated at sample points; no Julia process ran.",
+        f"Symbolic derivation evaluated at sample points; {outcome}.",
         "Symbolic and core Christoffel symbols and curvature agree to rounding; Julia claims stay unestablished.",
         "Probe the julia and julia-depot bindings; record the pin procedure; derive torus geometry with SymPy and "
         "compare with the core.",
         NEXT_STEPS["T145-unbound"],
-        numerical_result=(f"Julia worker not run: {reason}; SymPy agreement max |difference| = "
+        numerical_result=(f"{headline}: {reason}; SymPy agreement max |difference| = "
                           f"{symbolic['max_abs_difference']:.2e}" if symbolic
-                          else f"Julia worker not run: {reason}; SymPy absent"),
+                          else f"{headline}: {reason}; SymPy absent"),
         uncertainty="SymPy stands in for the symbolic role only; it says nothing about Julia performance or pinning.",
-        failure_modes_checked=["julia or julia-depot unbound (recorded, not substituted)",
+        failure_modes_checked=["julia or julia-depot unbound, or the bound runtime refused at its handshake "
+                               "(recorded, not substituted)",
                                "symbolic/core Christoffel disagreement", "symbolic/core curvature disagreement"],
-        unresolved_assumptions=[f"No Julia worker ran: {reason}",
+        unresolved_assumptions=[f"No request reached a Julia worker: {reason}" if started else
+                                f"No Julia worker ran: {reason}",
                                 "Windows x86-64 execution of the worker is not run",
                                 "Optimization and exploratory roles are not demonstrated"])
     return {"state": "partial", "fields": fields, "findings": findings}
@@ -852,6 +862,8 @@ def _julia_unbound(ctx, symbolic, symbolic_findings, reason: str):
                         f"{TESTS}::test_t145_julia_worker_acceptance_set",
                         f"{TESTS}::test_julia_host_refuses_invalid_requests_before_dispatch",
                         f"{TESTS}::test_julia_session_failures_end_the_session_without_a_result",
+                        f"{TESTS}::test_julia_package_and_runtime_trees",
+                        f"{TESTS}::test_t145_reports_a_fixture_that_did_not_complete",
                         f"{TESTS}::test_julia_encodings_and_scr_commitments"))
 def julia_role(ctx):
     from . import implementation_targets_julia as study
@@ -871,9 +883,10 @@ def julia_role(ctx):
     first = records["start worker-1"]
     if first["outcome"] != "accepted":
         # A bound runtime the handshake refuses is a refused binding, not evidence about the claims.
-        refusal = (f"JULIA_ENVIRONMENT_REFUSED: the bound Julia worker did not pass the handshake ({first['outcome']}: "
-                   f"{', '.join((first.get('comparison') or {}).get('mismatches', [])) or first.get('failure_detail', '')})")
-        return _julia_unbound(ctx, symbolic, symbolic_findings, refusal)
+        mismatches = ", ".join((first.get("comparison") or {}).get("mismatches", []))
+        refusal = (f"JULIA_ENVIRONMENT_REFUSED: the bound Julia worker was refused or exited before its handshake "
+                   f"({first['outcome']}: {mismatches or first.get('failure_detail', '')})")
+        return _julia_unbound(ctx, symbolic, symbolic_findings, refusal, started=True)
     analysis = study.analyse(result)
     ctx.artifact_json("julia-frames.json", study.retained_frames(records))
     exchanges = [{key: value for key, value in record.items()
@@ -900,7 +913,17 @@ def julia_role(ctx):
     findings = study.acceptance_findings(result, analysis, offline, scr, JULIA_PLAN["identity_fields"])
     findings += symbolic_findings
     handshake = study.sanitized_handshake(first["handshake"])
-    default, ladder = analysis["comparisons"].get("A1", {}), analysis["comparisons"]
+    comparisons = analysis["comparisons"]
+    # A fixture that did not complete is reported as such (its findings are refuted), never read as a result.
+    default = comparisons.get("A1")
+    default_text = (f"default fixture max |error| q {default['max_abs_error']['q']:.2e} m, "
+                    f"v {default['max_abs_error']['v']:.2e} m/s, E {default['max_abs_error']['energy']:.2e} J "
+                    f"(largest threshold ratio {default['max_threshold_ratio']:.1e})" if default else
+                    "default fixture did not complete (" + ("undecodable_output" if "A1" in analysis["undecodable"]
+                                                            else records.get("A1", {}).get("outcome", "missing")) + ")")
+    rungs = [comparisons.get(f"reltol-{tolerance:.0e}") for tolerance in (1e-6, 1e-12)]
+    ladder_text = (f"accepted steps {rungs[0]['naccept']} to {rungs[1]['naccept']} from reltol 1e-6 to 1e-12"
+                   if all(rungs) else "the tolerance ladder did not complete")
     fields = _fields(
         "A pinned Julia 1.10.12 worker integrating the damped oscillator with OrdinaryDiffEq's Tsit5, dispatched "
         "through SCR's SpecificationDispatcher, agrees with CIW's closed form within declared componentwise "
@@ -928,10 +951,7 @@ def julia_role(ctx):
         NEXT_STEPS["T145"],
         numerical_result=(
             f"Worker handshake accepted ({handshake['julia_version']}, {handshake['machine']}); path: {result['path']}; "
-            f"default fixture max |error| q {default['max_abs_error']['q']:.2e} m, v {default['max_abs_error']['v']:.2e} "
-            f"m/s, E {default['max_abs_error']['energy']:.2e} J (largest threshold ratio "
-            f"{default['max_threshold_ratio']:.1e}); accepted steps {ladder['reltol-1e-06']['naccept']} to "
-            f"{ladder['reltol-1e-12']['naccept']} from reltol 1e-6 to 1e-12"
+            f"{default_text}; {ladder_text}"
             + (f"; SymPy agreement max |difference| = {symbolic['max_abs_difference']:.2e}" if symbolic else "")),
         uncertainty=("Errors are the solver's global error against a closed form evaluated in binary64 (reference "
                      "rounding below 1e-13); they move by at most 0.8 % between FMA and non-FMA Julia code "
@@ -946,6 +966,8 @@ def julia_role(ctx):
         unresolved_assumptions=[
             "Windows x86-64 execution of the worker is not run; only this Linux host's results exist",
             "The handshake is the worker's declaration: a process replaying it passes (the protocol mock does)",
+            "The depot's precompiled package images are trusted from provisioning: the host verifies the runtime "
+            "tree and the package sources, but neither it nor Julia 1.10 checks the compiled images' content",
             "SCR's dispatcher records every runner's output as simulation:deterministic_native_execution; the "
             "label is SCR's at the pin and does not name the Julia worker",
             "Admission of the dispatched measurements through SCR's run_experiment_step is not exercised",
@@ -956,6 +978,7 @@ def julia_role(ctx):
             julia={"handshake": handshake, "accepted": True,
                    "compared_fields": first["comparison"]["compared"],
                    "packages_verified": first["comparison"]["packages_verified"],
+                   "package_trees_verified": first["comparison"]["package_trees_verified"],
                    "sysimage_sha256": first["comparison"]["sysimage_sha256"], "path": result["path"]},
             scr={"accepted": scr["accepted"], "reason": scr["reason"], "identity": scr["identity"]}))
     return {"state": "partial", "fields": fields, "findings": findings}

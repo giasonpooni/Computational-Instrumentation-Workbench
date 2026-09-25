@@ -339,11 +339,15 @@ def analyse(result: dict) -> dict:
     """Decode every completed exchange and compare it with the closed form; recompute SCR identities where SCR ran."""
     cases = fixtures()
     records = {record["label"]: record for record in result["records"]}
-    decoded, comparisons, scr = {}, {}, {}
+    decoded, comparisons, scr, undecodable = {}, {}, {}, {}
     for label, record in records.items():
         if record["op"] != "request" or record.get("outcome") != "completed":
             continue
-        output = jw.decode_output(bytes.fromhex(record["response_frame"])[jw.HEADER.size:])
+        try:
+            output = jw.decode_output(bytes.fromhex(record["response_frame"])[jw.HEADER.size:])
+        except (ValueError, struct.error, UnicodeDecodeError) as exc:
+            undecodable[label] = type(exc).__name__   # a completed frame without a valid output is no result
+            continue
         fixture = cases[record["fixture"]]
         output["grid_exact"] = output["t"] == [float(t) for t in fixture["times"]]
         decoded[label] = output
@@ -354,7 +358,8 @@ def analyse(result: dict) -> dict:
             comparisons[label].update(undamped_metrics(output, fixture, expected))
         if record.get("scr", {}).get("dispatch") == "measurement":
             scr[label] = recompute_scr(record)
-    return {"records": records, "decoded": decoded, "comparisons": comparisons, "scr": scr}
+    return {"records": records, "decoded": decoded, "comparisons": comparisons, "scr": scr,
+            "undecodable": undecodable}
 
 
 def replay_agreement(decoded: dict, labels=("A1", "A2", "A3", "A4")) -> dict:
@@ -451,11 +456,13 @@ CLAIMS = {
     "host_refusals": "The host refuses invalid numbers, grids and oversized frames before dispatch",
     "worker_refusals": "The worker refuses invalid requests it receives without running them and keeps serving",
     "halt": "A halted solve returns no output and no SCR measurement",
+    "halt_direct": "A halted solve returns no output",
     "channel": "Oversized frames, timeouts, crashes and a wrong environment end the worker session without a result",
     "mock": "Truncated, malformed, oversized and mismatched responses end the session without a result "
             "(protocol mock)",
     "replayed_handshake": "A process replaying a recorded handshake passes the worker handshake comparison",
     "offline": "Retained frames decode without Julia and reproduce the recorded SCR commitments",
+    "offline_direct": "Retained frames decode without Julia",
 }
 
 
@@ -523,15 +530,20 @@ def _worker_code(record: dict) -> str:
 
 def offline_restore(frames: dict, recorded_scr: dict) -> dict:
     """Decode the retained frames (read back from the artifact) and recompute SCR's commitments; no Julia runs."""
-    decoded, mismatched = 0, 0
+    completed, decoded, mismatched = 0, 0, 0
     for label, record in frames.items():
         if record["outcome"] != "completed":
             continue
-        jw.decode_output(bytes.fromhex(record["response_frame"])[jw.HEADER.size:])
+        completed += 1
+        try:
+            jw.decode_output(bytes.fromhex(record["response_frame"])[jw.HEADER.size:])
+        except (ValueError, struct.error, UnicodeDecodeError):
+            continue
         decoded += 1
         if label in recorded_scr:
             mismatched += len(recompute_scr(dict(record, scr=recorded_scr[label]))["mismatched"])
-    return {"decoded": decoded, "scr_compared": len(recorded_scr), "scr_mismatches": mismatched}
+    return {"completed": completed, "decoded": decoded, "scr_compared": len(recorded_scr),
+            "scr_mismatches": mismatched}
 
 
 def acceptance_findings(result: dict, analysis: dict, offline: dict, scr: dict, identity_fields) -> list:
@@ -548,23 +560,29 @@ def acceptance_findings(result: dict, analysis: dict, offline: dict, scr: dict, 
     accepted = [record for record in starts if record["outcome"] == "accepted"]
     mismatches = sum(len(record["comparison"]["mismatches"]) for record in accepted)
     problems = sum(len(record["comparison"]["package_problems"]) for record in accepted)
+    sources = sum(len(record["comparison"]["source_problems"]) for record in accepted)
     checker = {"implementation": "ciw.adapters.oscillator.closed_form", "revision": f"ciw {__version__}",
                "source_sha256": source_digest("src/ciw/adapters/oscillator.py")}
     producer = producer_identity(handshake) if handshake else None
     through_scr = result.get("path") == "scr"
     completed = [label for label, record in records.items() if record.get("outcome") == "completed"]
+    comparison = worker1["comparison"] or {}
     findings = [finding(
         CLAIMS["pin"], "provenance",
-        {"identity_fields": list(identity_fields), "compared_fields": len((worker1["comparison"] or {}).get(
-            "compared", [])), "packages_verified": (worker1["comparison"] or {}).get("packages_verified", 0),
-         "sessions_accepted": len(accepted)},
-        {"checks": [_check("handshake fields differing from the expected identity in accepted sessions",
-                           mismatches, 0),
-                    _check("loaded packages whose version or source tree differs from the committed Manifest",
-                           problems, 0),
+        {"identity_fields": list(identity_fields), "compared_fields": len(comparison.get("compared", [])),
+         "packages_verified": comparison.get("packages_verified", 0),
+         "package_trees_verified": comparison.get("package_trees_verified", 0), "sessions_accepted": len(accepted)},
+        {"checks": [_check("handshake fields, bound executable, runtime tree and system image differing from the "
+                           "expected identity and the pinned archive in accepted sessions", mismatches, 0),
+                    _check("declared loaded packages whose version or install directory differs from the committed "
+                           "Manifest", problems, 0),
+                    _check("Manifest package directories in the bound depot whose git tree, recomputed by the host, "
+                           "differs from the Manifest's git-tree-sha1", sources, 0),
                     _check("pinned worker sessions accepted (worker-1, worker-2, worker-3)", len(accepted), 3, "ge")],
-         "notes": "Each session's handshake is compared field by field before any request; the wrong-environment "
-                  "session (threads 2 where 1 is declared) is refused and not counted."},
+         "notes": "Each session's handshake is compared field by field, and the host reads the bound executable, "
+                  "runtime tree and package directories itself, before any request; the wrong-environment session "
+                  "(threads 2 where 1 is declared) is refused and not counted. The depot's precompiled package "
+                  "images are trusted from provisioning (neither the host nor Julia 1.10 checks their content)."},
         uncertainty=EXACT_U, tolerance=EXACT)]
 
     # ---------------------------------------------------------- the SCR boundary
@@ -595,8 +613,9 @@ def acceptance_findings(result: dict, analysis: dict, offline: dict, scr: dict, 
                                           producer=producer, checker=checker)}
 
     def missing(key, label):
+        observed = "undecodable_output" if label in analysis["undecodable"] else _outcome(records, label)
         return finding(CLAIMS[key], "numerical", None,
-                       {"checks": [_refusal(f"{label} completed", "completed", _outcome(records, label))]})
+                       {"checks": [_refusal(f"{label} completed", "completed", observed)]})
 
     for key, label, samples in (("default", "A1", 768), ("mixed", "B", 600)):
         entry = comparisons.get(label)
@@ -664,15 +683,19 @@ def acceptance_findings(result: dict, analysis: dict, offline: dict, scr: dict, 
             CLAIMS["bound"], "numerical", {"reltol": list(TOLERANCE_LADDER), "error_to_tolerance": ratios},
             {"checks": [_check("smallest over the rungs of the largest |v - v_ref| / (abstol + reltol |v_ref|)",
                                min(ratios["v"]), 1.0, "ge", "analytic")],
-             "notes": "abstol and reltol bound each step's local error estimate; the global error at the saved "
-                      "times accumulates over the steps, so the ratio is recorded, not assumed to stay below 1."},
+             "notes": "The requested tolerance is applied to each step's local error estimate, in an RMS norm over "
+                      "[q, v] scaled by the step's endpoints (max(|u_prev|, |u|)); it does not control the values "
+                      "interpolated at the saved times or the error accumulated over the steps, so a ratio above 1 "
+                      "is expected. The RMS norm alone lets one component's scaled estimate reach sqrt(2); these "
+                      "data do not separate the causes."},
             counterexample={"statement": "The requested tolerance abstol + reltol*|x| bounds the global error of each "
                                          "state component at the saved times",
                             "witness": {"reltol": TOLERANCE_LADDER[0], "channel": "v",
                                         "error_to_tolerance_ratio": ratios["v"][0]}},
             uncertainty=REFERENCE_U, tolerance=SOLVER_TOLERANCE))
     else:
-        findings += [missing("ladder", "tolerance ladder"), missing("bound", "tolerance ladder")]
+        rung = next(label for _, label in ladder if label not in comparisons)
+        findings += [missing("ladder", rung), missing("bound", rung)]
 
     # ---------------------------------------------------------- repeated and interleaved runs
     repeated = [label for label in ("A1", "A2", "A3", "A4") if label in decoded]
@@ -735,7 +758,8 @@ def acceptance_findings(result: dict, analysis: dict, offline: dict, scr: dict, 
                                      _measurements(records, [label for label, _ in channel]), 0))
     findings.append(finding(CLAIMS["worker_refusals"], "computational_pipeline", {"refused": refused},
                             {"checks": worker_checks}, uncertainty=EXACT_U, tolerance=EXACT))
-    findings.append(finding(CLAIMS["halt"], "computational_pipeline",
+    # Claims that name SCR are made only where SCR ran; the direct path's wording leaves SCR out.
+    findings.append(finding(CLAIMS["halt" if through_scr else "halt_direct"], "computational_pipeline",
                             {"halted_without_output": int(halt_checks[0]["passed"] and halt_checks[1]["passed"])},
                             {"checks": halt_checks}, uncertainty=EXACT_U, tolerance=EXACT))
     findings.append(finding(CLAIMS["channel"], "computational_pipeline", {"sessions_ended": ended},
@@ -759,11 +783,15 @@ def acceptance_findings(result: dict, analysis: dict, offline: dict, scr: dict, 
                         "witness": {"process": "Python protocol mock", "handshake": "replayed from worker-1",
                                     "mock_sessions_passing": replayed}},
         uncertainty=EXACT_U, tolerance=EXACT))
-    findings.append(finding(
-        CLAIMS["offline"], "computational_pipeline", offline,
-        {"checks": [_check("completed outputs decoded from the retained artifact", offline["decoded"],
-                           max(len(decoded), 1), "ge"),
-                    _check("SCR commitments recomputed from the retained artifact that differ from SCR's record",
-                           offline["scr_mismatches"], 0)]},
-        uncertainty=EXACT_U, tolerance=EXACT))
+    offline_checks = [_check("completed outputs in the retained artifact that do not decode",
+                             offline["completed"] - offline["decoded"], 0),
+                      _check("completed outputs decoded from the retained artifact", offline["decoded"], 1, "ge")]
+    if through_scr:
+        offline_checks += [_check("SCR records compared with commitments recomputed from the retained artifact",
+                                  offline["scr_compared"], 1, "ge"),
+                           _check("SCR commitments recomputed from the retained artifact that differ from SCR's "
+                                  "record", offline["scr_mismatches"], 0)]
+    findings.append(finding(CLAIMS["offline" if through_scr else "offline_direct"], "computational_pipeline",
+                            offline if through_scr else {key: offline[key] for key in ("completed", "decoded")},
+                            {"checks": offline_checks}, uncertainty=EXACT_U, tolerance=EXACT))
     return findings

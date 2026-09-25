@@ -7,14 +7,19 @@ of the one allowlisted operation (``ciw.julia.damped-oscillator.v1``: its
 configuration, input and output), framed messages with request identifiers and
 size limits, and a host-owned worker session: started with an explicit project,
 depot, disabled startup file and declared thread count; accepted only when its
-handshake matches the expected runtime identity (Julia version, platform,
-executable and worker source digests, project and manifest digests, every loaded
-package's version and source tree, threads, load path and numerical settings);
-one request in flight; a session identity and a monotonically increasing
-occurrence number per request. A timeout, unexpected end of stream, malformed or
-oversized response, mismatched request identifier or worker exit ends the
-session: the process is killed and reaped and the occurrence fails. Nothing is
-retried and no result is ever made up for a failed, refused or halted request.
+handshake matches the expected runtime identity (Julia version and release
+commit, platform, the pinned executable and system image digests, worker source,
+project and manifest digests, every loaded package's version and install
+directory, threads, load path and numerical settings) and the host's own reading
+of the bound files matches the pin (the executable, every file of the runtime
+tree the official archive holds, and the git tree of every package directory
+the committed Manifest names in the bound depot); one request in flight; a
+session identity and a monotonically increasing occurrence number per request. A
+timeout, unexpected end of stream, malformed or oversized response, mismatched
+request identifier or worker exit ends the session: the process is reaped (a
+worker that closed its output is given a moment to exit with its own code, which
+the failure records), killed if still running, and the occurrence fails. Nothing
+is retried and no result is ever made up for a failed, refused or halted request.
 
 The module imports the standard library only, so SCR's interpreter can host it
 behind ``execution.dispatcher.SpecificationDispatcher`` (see
@@ -25,6 +30,10 @@ they break the channel and never produce a result.
 Non-claims: the handshake is a declaration by the process that sent it (a
 process replaying a recorded handshake passes it), so it identifies the
 environment the worker reports, not an attested one; digests here are unkeyed.
+The depot's precompiled package images (``compiled/``) are trusted from
+provisioning: the host does not hash them, and Julia 1.10 checks only the
+sources' modification times against them. File digests are computed once per
+file state (path, size, inode, modification and change times) in a process.
 """
 from __future__ import annotations
 
@@ -36,6 +45,7 @@ from numbers import Real
 import os
 from pathlib import Path
 import queue
+import stat
 import struct
 import subprocess
 import sys
@@ -83,8 +93,9 @@ HEADER = struct.Struct("<4sBBHQI")  # magic, version, kind, reserved, request id
 MAX_REQUEST_PAYLOAD = 65536
 MAX_RESPONSE_PAYLOAD = 262144
 MAX_HANDSHAKE_PAYLOAD = 65536
+EXIT_GRACE_S = 5.0  # how long a worker that closed its output may take to exit before it is killed
 # Every handshake field, exactly: compared with the expected identity, checked against the bound files or pin
-# (machine, sysimage, project, depot, packages) or recorded only (julia_commit, opt_level, cpu_target, cpu_name).
+# (machine, sysimage, project, depot, packages) or recorded only (opt_level, cpu_target, cpu_name).
 HANDSHAKE_FIELDS = ("protocol", "operations", "operation_descriptor_sha256", "julia_version", "julia_commit",
                     "machine", "word_size", "executable_sha256", "sysimage", "worker_source_sha256", "project",
                     "project_sha256", "manifest_sha256", "local_preferences", "depot", "depot_count", "load_path",
@@ -285,12 +296,19 @@ def platform_archive(machine: str) -> dict | None:
                  if entry["machine"] == machine), None)
 
 
-def expected_identity(runtime: JuliaRuntime, threads: int = 1) -> dict:
-    """The handshake values the host requires, computed from the bound files (never read from a saved workspace)."""
+def runtime_root(executable, archive: dict) -> Path:
+    """The extracted archive root a bound executable lies in (the directory above ``bin`` for ``bin/julia``)."""
+    return Path(executable).resolve().parents[len(Path(archive["executable"]).parts) - 1]
+
+
+def expected_identity(runtime: JuliaRuntime, threads: int = 1, archive: dict | None = None) -> dict:
+    """The handshake values the host requires: the pin's Julia version and release commit, the pinned executable digest
+    of ``archive`` (the pinned archive for the declared machine), and digests of the bound worker, project and manifest
+    files (never read from a saved workspace)."""
     return {"protocol": PROTOCOL, "operations": OPERATION,
             "operation_descriptor_sha256": hashlib.sha256(OPERATION_DESCRIPTOR).hexdigest(),
-            "julia_version": RUNTIME_PIN["version"], "word_size": "64",
-            "executable_sha256": sha256_file(Path(runtime.executable).resolve()),
+            "julia_version": RUNTIME_PIN["version"], "julia_commit": RUNTIME_PIN["commit"], "word_size": "64",
+            "executable_sha256": None if archive is None else archive["executable_sha256"],
             "worker_source_sha256": sha256_file(runtime.worker),
             "project_sha256": sha256_file(Path(runtime.project) / "Project.toml"),
             "manifest_sha256": sha256_file(Path(runtime.project) / "Manifest.toml"),
@@ -311,18 +329,32 @@ def _julia_float(value: float) -> str:
 
 
 def compare_handshake(handshake: dict, runtime: JuliaRuntime, threads: int = 1) -> dict:
-    """Field-by-field comparison with the expected identity; ``mismatches`` lists field names only."""
-    expected = expected_identity(runtime, threads)
+    """Field-by-field comparison with the expected identity, then the host's own reading of the bound files: the
+    executable, the runtime tree and system image against the pin, and every package directory the committed Manifest
+    names in the bound depot against its git tree. ``mismatches`` lists field or check names only."""
+    archive = platform_archive(handshake.get("machine", ""))
+    expected = expected_identity(runtime, threads, archive)
     mismatches = sorted(name for name, value in expected.items() if handshake.get(name) != value)
     if set(handshake) != set(HANDSHAKE_FIELDS):
         mismatches.append("fields")
-    archive = platform_archive(handshake.get("machine", ""))
+    sysimage_sha256 = None
     if archive is None:
-        mismatches.append("machine")
-    bindir = Path(runtime.executable).resolve().parent
-    sysimage = handshake.get("sysimage", "")
-    if archive is None or Path(sysimage) != Path(archive["sysimage"]):
-        mismatches.append("sysimage")
+        mismatches += ["machine", "sysimage", "runtime_tree"]
+    else:
+        # The files the host launched: the bound executable and every file of the runtime tree it lies in.
+        executable = Path(runtime.executable).resolve()
+        sysimage = handshake.get("sysimage", "")
+        try:
+            if _file_digest(executable) != archive["executable_sha256"]:
+                mismatches.append("executable_file")
+            if runtime_tree_sha256(runtime_root(executable, archive)) != archive["tree_sha256"]:
+                mismatches.append("runtime_tree")
+            if Path(sysimage) == Path(archive["sysimage"]):
+                sysimage_sha256 = _file_digest(executable.parent / sysimage)
+        except OSError:
+            mismatches.append("runtime_tree")
+        if sysimage_sha256 != archive["sysimage_sha256"]:
+            mismatches.append("sysimage")
     for name, bound in (("project", Path(runtime.project) / "Project.toml"), ("depot", Path(runtime.depot))):
         try:
             same = os.path.samefile(handshake.get(name, ""), bound)
@@ -334,29 +366,123 @@ def compare_handshake(handshake: dict, runtime: JuliaRuntime, threads: int = 1) 
     loaded, problems = parse_packages(handshake.get("packages", ""), manifest["packages"])
     if problems:
         mismatches.append("packages")
+    sources = package_source_problems(Path(runtime.depot), manifest["packages"])
+    if sources:
+        mismatches.append("package_sources")
     direct = tomllib.loads((Path(runtime.project) / "Project.toml").read_text(encoding="utf-8"))["deps"]
     missing = sorted(name for name in direct if name in manifest["packages"] and name not in loaded)
     if missing:
         mismatches.append("packages_loaded")
     return {"accepted": not mismatches, "mismatches": sorted(set(mismatches)), "compared": sorted(expected),
-            "package_problems": problems, "packages_verified": len(loaded),
-            "sysimage_sha256": _cached_sha256(bindir / sysimage) if archive is not None and not mismatches else None}
+            "package_problems": problems, "packages_verified": len(loaded), "source_problems": sources,
+            "package_trees_verified": len(manifest["packages"]) - len(sources),
+            "sysimage_sha256": sysimage_sha256 if not mismatches else None}
 
 
 _DIGESTS: dict = {}
 
 
-def _cached_sha256(path: Path) -> str:
-    """The digest of a large runtime file (the system image), computed once per file state in this process."""
-    status = path.stat()
-    key = (str(path), status.st_size, status.st_mtime_ns)
+def _file_digest(path: Path, kind: str = "sha256") -> str:
+    """A regular file's sha256, or its git blob SHA-1 (``kind="git-blob"``), computed once per file state (path,
+    size, inode, modification and change times) in this process."""
+    status = os.stat(path)
+    key = (str(path), kind, status.st_size, status.st_ino, status.st_mtime_ns, status.st_ctime_ns)
     if key not in _DIGESTS:
-        _DIGESTS[key] = sha256_file(path)
+        if kind == "sha256":
+            _DIGESTS[key] = sha256_file(path)
+        else:
+            data = Path(path).read_bytes()
+            _DIGESTS[key] = hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
     return _DIGESTS[key]
 
 
+def runtime_tree_sha256(root) -> str:
+    """The pin's ``tree_sha256`` of an extracted Julia runtime: every regular file (its content) and symbolic link (its
+    target) under ``root``, as :func:`tree_listing_sha256` digests them. ``scripts/provision_julia.py`` computes the
+    same digest from the official archive's members. Directories are not entries; any other kind of file is an
+    ``other`` entry, which no archive holds."""
+    root = Path(root)
+    entries = {}
+    for directory, dirnames, filenames in os.walk(root):
+        for name in dirnames + filenames:
+            path = Path(directory, name)
+            mode = os.lstat(path).st_mode
+            relative = path.relative_to(root).as_posix()
+            if stat.S_ISLNK(mode):
+                entries[relative] = ("link", hashlib.sha256(os.readlink(path).encode("utf-8")).hexdigest())
+            elif stat.S_ISREG(mode):
+                entries[relative] = ("file", _file_digest(path))
+            elif not stat.S_ISDIR(mode):
+                entries[relative] = ("other", "")
+    return tree_listing_sha256(entries)
+
+
+def tree_listing_sha256(entries: dict) -> str:
+    """sha256 of the lines ``<kind> <sha256> <relative POSIX path>``, sorted by path, of ``{path: (kind, sha256)}``."""
+    text = "".join(f"{kind} {digest} {path}\n" for path, (kind, digest) in sorted(entries.items()))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def git_tree_sha1(root) -> str:
+    """Pkg's ``GitTools.tree_hash`` of a directory: the git tree SHA-1 a Manifest records as ``git-tree-sha1``.
+
+    Entries are sorted by name (a directory's with a trailing ``/``); ``.git``
+    and directories without files are skipped; modes are 40000 (directory),
+    120000 (symbolic link, hashed as a blob of its target), 100755 when the
+    owner's execute bit is set and 100644 otherwise (on Windows Python's stat
+    reports that bit by file extension).
+    """
+    return _git_tree(Path(root)).hex()
+
+
+def _git_tree(root: Path) -> bytes:
+    modes = {}
+    for name in os.listdir(root):
+        mode = os.lstat(root / name).st_mode
+        modes[name] = ("120000" if stat.S_ISLNK(mode) else "40000" if stat.S_ISDIR(mode)
+                       else "100755" if mode & 0o100 else "100644")
+    entries = []
+    for name in sorted(modes, key=lambda item: item + "/" if modes[item] == "40000" else item):
+        path = root / name
+        if name == ".git" or (modes[name] == "40000" and not _contains_files(path)):
+            continue
+        if modes[name] == "40000":
+            digest = _git_tree(path)
+        elif modes[name] == "120000":
+            target = os.readlink(path).encode("utf-8")
+            digest = hashlib.sha1(b"blob %d\0" % len(target) + target).digest()
+        else:
+            digest = bytes.fromhex(_file_digest(path, "git-blob"))
+        entries.append(f"{modes[name]} {name}\0".encode("utf-8") + digest)
+    body = b"".join(entries)
+    return hashlib.sha1(b"tree %d\0" % len(body) + body).digest()
+
+
+def _contains_files(path: Path) -> bool:
+    if os.path.islink(path) or not os.path.isdir(path):
+        return True
+    return any(_contains_files(path / name) for name in os.listdir(path))
+
+
+def package_source_problems(depot: Path, packages: dict) -> list:
+    """Manifest packages whose install directory in ``depot`` (``packages/<name>/<slug>``, the one Julia loads) is
+    missing or whose git tree, recomputed here, differs from the Manifest's ``git-tree-sha1``."""
+    problems = []
+    for name, entry in sorted(packages.items()):
+        directory = Path(depot) / "packages" / name / version_slug(entry["uuid"], entry["tree"])
+        try:
+            same = git_tree_sha1(directory) == entry["tree"]
+        except OSError:
+            same = False
+        if not same:
+            problems.append(f"source:{name}")
+    return problems
+
+
 def parse_packages(text: str, manifest: dict) -> tuple:
-    """Each loaded package ``name=uuid=version=<package>/<slug>/<file>`` against the manifest's uuid, version and tree."""
+    """Each declared loaded package ``name=uuid=version=<package>/<slug>/<file>`` against the manifest's uuid, version
+    and install directory (the slug of its uuid and git tree); the directory's content is checked by
+    :func:`package_source_problems`."""
     loaded, problems = {}, []
     for item in [part for part in text.split(";") if part]:
         try:
@@ -467,8 +593,10 @@ class WorkerSession:
 
         ``fault`` injects a channel failure for the acceptance fixtures:
         ``oversized_header`` declares a payload over the worker's limit,
-        ``stall`` sends half the payload and waits, ``crash`` kills the worker
-        once the request is sent. Each ends the session without a result.
+        ``stall`` sends half the payload and waits, ``crash`` sends half the
+        payload and kills the worker (it never holds a complete request, so the
+        outcome does not depend on scheduling). Each ends the session without a
+        result.
         """
         if self.ended is not None or self.process is None:
             raise WorkerFailure("session_ended", self.ended or "not started")
@@ -478,7 +606,7 @@ class WorkerSession:
         self.occurrences = occurrence
         if fault == "oversized_header":
             data = HEADER.pack(MAGIC, VERSION, KINDS["request"], 0, occurrence, MAX_REQUEST_PAYLOAD + 1)
-        elif fault == "stall":
+        elif fault in ("stall", "crash"):
             data = data[:HEADER.size + len(payload) // 2]
         elif fault not in (None, "crash"):
             raise ValueError(f"Unknown fault injection: {fault}")
@@ -576,12 +704,28 @@ class WorkerSession:
         return header, self._read_exact(header[5], deadline, occurrence, True)
 
     def _end(self, code: str, detail: str, occurrence=None, response: bytes | None = None):
-        """End the session: kill and reap the worker, fail the occurrence. Never returns."""
+        """End the session: reap the worker (killed if still running), fail the occurrence. Never returns.
+
+        When the worker closed its output (``worker_exited``, ``unexpected_eof``)
+        it is given :data:`EXIT_GRACE_S` to exit on its own, and the failure
+        detail records its exit code (the worker's 70: a package not installed
+        and precompiled in the bound depot; 65, 66, 67: a malformed, oversized
+        or truncated request frame; 1: a Julia error; a negative code: the
+        signal that ended it).
+        """
         self.ended = code
         if self.process is not None:
+            closed = code in ("worker_exited", "unexpected_eof")
+            if closed:
+                try:
+                    self.process.wait(timeout=EXIT_GRACE_S)
+                except subprocess.TimeoutExpired:
+                    pass
             if self.process.poll() is None:
                 self.process.kill()
             self.process.wait()
+            if closed:
+                detail = f"{detail}; worker exit code {self.process.returncode}"
             for stream in (self.process.stdin,):
                 try:
                     stream.close()

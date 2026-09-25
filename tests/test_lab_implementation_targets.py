@@ -1,10 +1,12 @@
 import dataclasses
+import hashlib
 import importlib.util
 import json
 import math
 import os
 import re
 import shutil
+import subprocess
 
 import numpy as np
 import pytest
@@ -264,8 +266,17 @@ def test_t145_julia_worker_acceptance_set(tmp_path):
     assert findings[claims["platform"]]["evidence_status"] == "not_established"
     assert findings[claims["platform"]]["expected_not_established"] is True
     for key in ("pin", "grid", "drift", "ladder", "bound", "replay", "bytes", "host_refusals", "worker_refusals",
-                "halt", "channel", "mock", "replayed_handshake", "offline"):
+                "channel", "mock", "replayed_handshake"):
         assert findings[claims[key]]["evidence_status"] == "numerically_verified", key
+    # Claims that name SCR are made only where SCR ran; the direct path words them without SCR.
+    for key in ("halt", "offline"):
+        made, absent = (key, f"{key}_direct") if "scr" in bound else (f"{key}_direct", key)
+        assert findings[claims[made]]["evidence_status"] == "numerically_verified", key
+        assert claims[absent] not in findings
+    if "scr" in bound:
+        assert findings[claims["offline"]]["value"]["scr_compared"] >= 1
+    manifest = julia_worker.manifest_packages(julia_worker.WORKER_DIR / "Manifest.toml")["packages"]
+    assert findings[claims["pin"]]["value"]["package_trees_verified"] == len(manifest)
     # The tolerance is not a global error bound (a retained counterexample), and repeated occurrences agree.
     assert findings[claims["bound"]]["counterexample"]["witness"]["error_to_tolerance_ratio"] > 1
     assert findings[claims["replay"]]["value"] == {"occurrences": 4, "sessions": 2, "max_abs_difference": 0.0}
@@ -323,6 +334,8 @@ def test_julia_session_failures_end_the_session_without_a_result():
             session.request(program, configuration, input_payload)
         assert failure.value.code == code, mode
         assert failure.value.occurrence == 1 and failure.value.request_frame is not None
+        if mode == "exit_after_handshake":   # a worker that closed its output is reaped with its own exit code
+            assert failure.value.detail.endswith("worker exit code 3")
         # The session is over and its process reaped; a later request is refused, never retried.
         assert session.ended == code and session.process.poll() is not None
         with pytest.raises(julia_worker.WorkerFailure, match="session_ended"):
@@ -337,6 +350,122 @@ def test_julia_session_failures_end_the_session_without_a_result():
     broken = julia_worker.mock_session("silent", b"not a handshake")
     with pytest.raises(julia_worker.WorkerFailure, match="malformed_handshake"):
         broken.start()
+    # A crash kills a worker that holds half a request: it can never answer, however the host is scheduled.
+    crashing = _mock("silent", request_timeout=30.0)
+    crashing.start()
+    with pytest.raises(julia_worker.WorkerFailure) as failure:
+        crashing.request(program, configuration, input_payload, fault="crash")
+    assert failure.value.code == "worker_exited" and "worker exit code" in failure.value.detail
+    full = julia_worker.HEADER.size + len(julia_worker.encode_request(program, configuration, input_payload))
+    assert len(failure.value.request_frame) < full and crashing.process.poll() is not None
+
+
+@pytest.mark.lab_task("T145")
+def test_julia_package_and_runtime_trees(tmp_path):
+    """The host's own reading of bound files: Pkg's git tree hash of package sources and the runtime tree digest."""
+    package = tmp_path / "package"
+    files = (("src/P.jl", b"module P\nend\n"), ("ext/PExt.jl", b"x"), ("Project.toml", b'name = "P"\n'))
+    for relative, content in files:
+        (package / relative).parent.mkdir(parents=True, exist_ok=True)
+        (package / relative).write_bytes(content)
+    (package / "empty" / "nested").mkdir(parents=True)
+    tree = "6c2d8ddb7d5512769da0a9af28fd38d8486062df"   # git write-tree of these files (git skips empty directories)
+    assert julia_worker.git_tree_sha1(package) == tree
+    # Installed under the slug Julia loads it from, the package passes; changed bytes or a missing directory do not.
+    depot, package_uuid = tmp_path / "depot", "b1df2697-797e-41e3-8120-5422d3b24e4a"
+    installed = depot / "packages" / "P" / julia_worker.version_slug(package_uuid, tree)
+    shutil.copytree(package, installed)
+    for path in installed.rglob("*"):
+        os.utime(path, ns=(10**18, 10**18))   # provisioned long before the change below
+    manifest = {"P": {"uuid": package_uuid, "version": "1.0.0", "tree": tree, "extensions": []}}
+    assert julia_worker.package_source_problems(depot, manifest) == []
+    (installed / "src" / "P.jl").write_bytes(b"module Q\nend\n")   # same size, other bytes
+    assert julia_worker.package_source_problems(depot, manifest) == ["source:P"]
+    shutil.rmtree(installed)
+    assert julia_worker.package_source_problems(depot, manifest) == ["source:P"]
+    if os.name == "posix" and shutil.which("git"):
+        # Executable files and symbolic links carry git's modes 100755 and 120000, as git itself records them.
+        (package / "run.sh").write_bytes(b"#!/bin/sh\n")
+        (package / "run.sh").chmod(0o755)
+        (package / "link.jl").symlink_to("src/P.jl")
+        git = ["git", f"--git-dir={tmp_path / 'git'}", f"--work-tree={package}"]
+        subprocess.run(git + ["init", "-q"], check=True)
+        subprocess.run(git + ["add", "-A"], check=True)
+        written = subprocess.run(git + ["write-tree"], check=True, capture_output=True, text=True).stdout.strip()
+        assert julia_worker.git_tree_sha1(package) == written
+    # The runtime tree digest lists every file by content (directories are not entries).
+    runtime = tmp_path / "runtime"
+    (runtime / "bin").mkdir(parents=True)
+    (runtime / "lib" / "julia").mkdir(parents=True)
+    launcher = runtime / "bin" / "julia"
+    launcher.write_bytes(b"launcher")
+    listing = f"file {hashlib.sha256(b'launcher').hexdigest()} bin/julia\n"
+    assert julia_worker.runtime_tree_sha256(runtime) == hashlib.sha256(listing.encode()).hexdigest()
+    (runtime / "lib" / "julia" / "extra.so").write_bytes(b"")
+    assert julia_worker.runtime_tree_sha256(runtime) != hashlib.sha256(listing.encode()).hexdigest()
+    # A byte-different runtime is refused although it declares exactly the pinned identity: the host reads the bound
+    # executable and runtime tree itself and compares the declared executable digest with the pin, not the file.
+    archive = julia_worker.RUNTIME_PIN["archives"]["linux-x86_64"]
+    bound = julia_worker.JuliaRuntime(launcher, depot)
+    handshake = dict.fromkeys(julia_worker.HANDSHAKE_FIELDS, "")
+    handshake.update(julia_worker.expected_identity(bound, 1, archive), machine=archive["machine"],
+                     sysimage=archive["sysimage"])
+    comparison = julia_worker.compare_handshake(handshake, bound)
+    assert not comparison["accepted"] and "executable_sha256" not in comparison["mismatches"]
+    assert {"executable_file", "runtime_tree", "sysimage", "package_sources"} <= set(comparison["mismatches"])
+    handshake.update(executable_sha256=julia_worker.sha256_file(launcher), julia_commit="0" * 40)
+    mismatches = julia_worker.compare_handshake(handshake, bound)["mismatches"]
+    assert {"executable_sha256", "julia_commit"} <= set(mismatches)
+
+
+def _halting_run(runtime, steps, scr_root=None):
+    """A stand-in for implementation_targets_julia.run: every session accepted, every request halted (no output)."""
+    fields = dict.fromkeys(julia_worker.HANDSHAKE_FIELDS, "x")
+    fields.update(julia_version="1.10.12", julia_commit="0" * 40, machine="x86_64-linux-gnu",
+                  packages="OrdinaryDiffEqTsit5=b1df2697-797e-41e3-8120-5422d3b24e4a=2.1.4=OrdinaryDiffEqTsit5/74X3C/"
+                           "src/OrdinaryDiffEqTsit5.jl")
+    handshake = "".join([julia_worker.HANDSHAKE_SCHEMA + "\n"] + [f"{key} {value}\n" for key, value in fields.items()])
+    comparison = {"accepted": True, "mismatches": [], "compared": [], "package_problems": [], "source_problems": [],
+                  "packages_verified": 1, "package_trees_verified": 0, "sysimage_sha256": None}
+    halt = b"ciw.julia.worker-halt.v1\nretcode MaxIters\nnaccept 10\nnreject 0\nnf 61\nsaved 1\n"
+    records, occurrence = [], 0
+    for step in steps:
+        record = {"label": step["label"], "op": step["op"], "session": step["session"], "session_id": step["session"],
+                  "session_ended": None}
+        if step["op"] == "start":
+            record.update(outcome="accepted", startup_s=0.0, handshake=handshake.encode().hex(), comparison=comparison)
+        else:
+            occurrence += 1
+            request = julia_worker.encode_request(*(bytes.fromhex(step[name])
+                                                    for name in ("program", "configuration", "input")))
+            record.update(fixture=step["fixture"], fault=step.get("fault"), outcome="halted", occurrence=occurrence,
+                          request_id=occurrence, request_frame=julia_worker.frame("request", occurrence, request).hex(),
+                          response_frame=julia_worker.frame("halted", occurrence, halt).hex(), elapsed_s=0.0)
+        records.append(record)
+    sessions = {step["session"]: {"session_id": step["session"], "occurrences": 0, "ended": "closed",
+                                  "stderr_bytes": 0, "exit_code": 0} for step in steps}
+    return {"records": records, "sessions": sessions, "path": "direct"}
+
+
+@pytest.mark.lab_task("T145")
+def test_t145_reports_a_fixture_that_did_not_complete(tmp_path, monkeypatch):
+    """A bound worker whose requests all halt: T145 reports refuted findings instead of failing on a missing result."""
+    monkeypatch.setattr(julia_study, "run", _halting_run)
+    for role in ("julia", "julia-depot"):
+        (tmp_path / role).touch()
+    bound = {role: tmp_path / role for role in ("julia", "julia-depot")}
+    implementations = section_implementations("implementation-targets")
+    report = runner.run_task(TASKS["T145"], implementations["T145"], runner.Context(tmp_path / "run", bound), {})
+    validate_report(report)
+    findings = {f["claim"]: f for f in report["findings"]}
+    assert report["state"] == "partial"
+    default = findings[julia_study.CLAIMS["default"]]
+    assert default["evidence_status"] == "not_established" and not default.get("expected_not_established")
+    assert default["basis"]["checks"][0]["observed_refusal"] == "halted"
+    assert "default fixture did not complete (halted)" in report["numerical_result"]
+    assert "the tolerance ladder did not complete" in report["numerical_result"]
+    assert findings[julia_study.CLAIMS["halt_direct"]]["evidence_status"] == "numerically_verified"
+    assert findings[julia_study.CLAIMS["offline_direct"]]["evidence_status"] == "not_established"
 
 
 @pytest.mark.lab_task("T145")

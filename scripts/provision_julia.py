@@ -2,8 +2,10 @@
 
 Reads the pin in ``src/ciw/lab/julia/julia-runtime.json`` (Julia 1.10.12 LTS), downloads the
 official archive for this platform (or takes ``--archive``), requires its SHA-256 to equal the
-pin and the entry in Julia's published checksum file, and extracts it under ``--prefix``. Then
-instantiates the committed ``src/ciw/lab/julia/Manifest.toml`` into ``--depot`` from the Julia
+pin and the entry in Julia's published checksum file, requires the pin's runtime digests (the
+executable, the system image and the whole runtime tree) to be those of the archive's members,
+extracts it under ``--prefix`` and requires the extracted tree, new or reused, to hold exactly
+the archive's files. Then instantiates the committed ``src/ciw/lab/julia/Manifest.toml`` into ``--depot`` from the Julia
 package server (Pkg checks every package's git tree hash) and precompiles it for this CPU,
 refusing a run that changes the committed Project.toml or Manifest.toml. Finally it starts the
 worker once and requires its handshake to match the expected identity. It prints the identities
@@ -23,7 +25,9 @@ import json
 import os
 from pathlib import Path
 import platform
+import posixpath
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -34,14 +38,51 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / "src" / "ciw" / "lab" / "julia"
 PIN = json.loads((PROJECT / "julia-runtime.json").read_text(encoding="utf-8"))
+sys.path.insert(0, str(ROOT / "src"))
+from ciw.lab import julia_worker  # noqa: E402  (standard library only)
 
 
 def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
     with open(path, "rb") as stream:
-        for block in iter(lambda: stream.read(1 << 20), b""):
-            digest.update(block)
+        return stream_sha256(stream)
+
+
+def stream_sha256(stream) -> str:
+    digest = hashlib.sha256()
+    for block in iter(lambda: stream.read(1 << 20), b""):
+        digest.update(block)
     return digest.hexdigest()
+
+
+def archive_identity(archive: Path, entry: dict) -> dict:
+    """The pin's runtime digests taken from the archive's members, nothing extracted: the executable, the system
+    image and the runtime tree (``julia_worker.runtime_tree_sha256`` of the archive's root directory)."""
+    root = entry["root"].rstrip("/") + "/"
+    entries = {}
+    if archive.name.endswith(".tar.gz"):
+        with tarfile.open(archive) as bundle:
+            for member in bundle:
+                if member.isdir() or not member.name.startswith(root):
+                    continue
+                relative = member.name[len(root):]
+                if member.issym():
+                    entries[relative] = ("link", hashlib.sha256(member.linkname.encode("utf-8")).hexdigest())
+                elif member.isreg() or member.islnk():   # a hard link's content is its target's
+                    entries[relative] = ("file", stream_sha256(bundle.extractfile(member)))
+                else:
+                    entries[relative] = ("other", "")
+    else:
+        with zipfile.ZipFile(archive) as bundle:
+            for info in bundle.infolist():
+                if info.is_dir() or not info.filename.startswith(root):
+                    continue
+                with bundle.open(info) as stream:
+                    content = stream_sha256(stream)
+                link = stat.S_ISLNK(info.external_attr >> 16)
+                entries[info.filename[len(root):]] = ("link" if link else "file", content)
+    sysimage = posixpath.normpath(posixpath.join(posixpath.dirname(entry["executable"]), entry["sysimage"]))
+    return {"executable_sha256": entries[entry["executable"]][1], "sysimage_sha256": entries[sysimage][1],
+            "tree_sha256": julia_worker.tree_listing_sha256(entries)}
 
 
 def host_platform() -> str:
@@ -112,10 +153,18 @@ def main() -> int:
     digest = sha256(archive)
     if digest != entry["sha256"]:
         raise SystemExit(f"{archive.name} has sha256 {digest}, not the pinned {entry['sha256']}")
+    identity = archive_identity(archive, entry)
+    if identity != {key: entry.get(key) for key in identity}:
+        raise SystemExit(f"The pin's runtime digests are not those of {archive_name}'s members: {json.dumps(identity)}")
     root = prefix / entry["root"]
     executable = root / entry["executable"]
     if not executable.is_file():
         extract(archive, prefix)
+    # A reused prefix must hold exactly the archive's files, not merely a julia that reports the pinned version.
+    tree = julia_worker.runtime_tree_sha256(root)
+    if tree != entry["tree_sha256"]:
+        raise SystemExit(f"{root} does not hold exactly the files of {archive_name} (runtime tree {tree}, pinned "
+                         f"{entry['tree_sha256']}); remove it and provision again")
     version = subprocess.run([str(executable), "--version"], check=True, capture_output=True, text=True).stdout.strip()
     if version != f"julia version {PIN['version']}":
         raise SystemExit(f"{executable} reports {version!r}, not Julia {PIN['version']}")
@@ -129,9 +178,6 @@ def main() -> int:
     if after != committed and not args.resolve:
         raise SystemExit("Instantiating changed the committed Project.toml or Manifest.toml; the environment is not "
                          "the committed one (git diff src/ciw/lab/julia)")
-    sys.path.insert(0, str(ROOT / "src"))
-    from ciw.lab import julia_worker
-
     session = julia_worker.WorkerSession.for_runtime(julia_worker.JuliaRuntime(executable, depot),
                                                      cwd=tempfile.gettempdir())
     try:
@@ -141,11 +187,11 @@ def main() -> int:
     finally:
         session.close()
     print(json.dumps({"julia_version": PIN["version"], "platform": name, "archive": archive_name,
-                      "archive_sha256": digest, "executable_sha256": sha256(executable),
+                      "archive_sha256": digest, "julia_commit": session.handshake["julia_commit"], **identity,
                       "project_sha256": after["Project.toml"], "manifest_sha256": after["Manifest.toml"],
                       "handshake_accepted": session.comparison["accepted"],
                       "packages_verified": session.comparison["packages_verified"],
-                      "sysimage_sha256": session.comparison["sysimage_sha256"],
+                      "package_trees_verified": session.comparison["package_trees_verified"],
                       "bindings": [f"julia={executable}", f"julia-depot={depot}"]}, indent=2))
     return 0
 

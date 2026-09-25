@@ -30,8 +30,10 @@ python -m ciw lab run T142 T143 T144 T145 T146 T147 T148 T149 T150 T151 T152 T15
 
 Without the Julia bindings it takes about 6 s on one core; with them T145
 starts four Julia workers (about 4 s each on the retained host, mostly package
-loading and compiling the worker) and the section takes about 26 s on one
-core, within the 60 s budget. T142 and T146 compile a small Rust probe
+loading and compiling the worker; reading the 630 MB runtime tree for the
+handshake check adds about 0.6 s once per run) and the section takes about
+29 s on one core, within the 60 s budget. T142 and T146 compile a small Rust
+probe
 (standard library only) with `rustc` when it is on `PATH`:
 
 - `rustc` absent, or unable to build a trivial program here: the Rust findings
@@ -244,17 +246,25 @@ implementation).
 
 **Runtime and environment.** The pin (`src/ciw/lab/julia/julia-runtime.json`)
 is Julia 1.10.12 LTS: the official archive's URL and SHA-256, which must also
-be the entry in Julia's published checksum file. The worker environment
+be the entry in Julia's published checksum file, the release commit, and per
+platform the SHA-256 of the executable (`bin/julia`, `bin/julia.exe`), of the
+system image (`lib/julia/sys.so`, `sys.dll`) and of the runtime tree (every
+file and symbolic link of the archive's root directory, listed as `<kind>
+<sha256> <path>` lines sorted by path), all taken from the verified archives'
+members. The worker environment
 (`src/ciw/lab/julia/Project.toml`) declares `OrdinaryDiffEqTsit5` 2.1.4,
 `OrdinaryDiffEqCore` 4.18.0, `SciMLBase` 3.56.0 and `SHA` with exact compat
 entries and `julia = "=1.10.12"`; `Manifest.toml` is Pkg's machine-generated
 resolution (63 registered packages with their git tree hashes, 53 of which the
 worker loads, plus standard libraries). Provisioning
 is separate from execution: `python scripts/provision_julia.py --prefix P
---depot D` downloads and checks the archive, extracts it, instantiates the
-committed manifest into the depot from the package server (Pkg verifies each
-tree hash), precompiles it for the CPU, refuses a run that changes the
-committed files, starts the worker once and prints the bindings. A lab run
+--depot D` downloads and checks the archive, requires the pin's runtime digests
+to be those of the archive's members, extracts it (or reuses an extracted
+prefix) and requires the extracted tree to hold exactly the archive's files,
+instantiates the committed manifest into the depot from the package server (Pkg
+verifies each tree hash), precompiles it for the CPU, refuses a run that
+changes the committed files, starts the worker once and prints the bindings.
+A lab run
 binds the executable and the depot explicitly, `--provider julia=P/julia-1.10.12/bin/julia
 --provider julia-depot=D` (the clean-room tests read them as
 `CIW_LAB_JULIA_EXECUTABLE` and `CIW_LAB_JULIA_DEPOT`); nothing is looked up on
@@ -266,9 +276,10 @@ only) starts `julia --project=<packaged environment> --startup-file=no
 --history-file=no --threads=1 --color=no oscillator_worker.jl` with
 `JULIA_DEPOT_PATH` set to the bound depot alone, `JULIA_LOAD_PATH=@` and
 `@stdlib`, `JULIA_PKG_OFFLINE=true` and no other `JULIA_*` variable. The worker
-refuses to start when a package is not precompiled in the depot, so it never
-resolves, downloads or compiles packages while serving; it writes protocol
-frames to its original stdout only and every diagnostic to stderr. Frames in
+refuses to start (exit code 70) when a package is not installed and
+precompiled in the depot, so it never resolves, downloads or compiles packages
+while serving; it writes protocol frames to its original stdout only and every
+diagnostic to stderr. Frames in
 both directions are little-endian: magic `CIWJ`, version 1, kind (handshake,
 request, completed, refused, halted, shutdown), reserved zero, request
 identifier (u64), payload length (u32, at most 65,536 bytes for requests and
@@ -304,20 +315,33 @@ worker source, project and manifest digests, the active project and depot, the
 load path, every loaded package with its version and source directory, thread
 counts, rounding mode, subnormal flushing, optimization level, bounds checking,
 fast math, CPU target and name, and the controller profile. The host accepts
-the session only when every field it computes from the bound files matches
-(the executable, worker source, project and manifest digests, Julia 1.10.12,
-one thread and no interactive threads, the default rounding and flags), the
-machine has a pinned archive and the system image is its default, the project
-and depot are the bound ones, and every loaded package's version and directory
-match the committed manifest: the directory name must be Julia's slug of the
-package's UUID and git tree hash (CRC-32C, recomputed in Python). CPU name,
-Julia commit, optimization level and CPU target are recorded only. One request
+the session only when every declared field matches the expected identity
+(Julia 1.10.12 and its release commit, the pinned executable digest for the
+declared machine, the bound worker source, project and manifest digests, one
+thread and no interactive threads, the default rounding and flags), the machine
+has a pinned archive and the system image is its default, the project and depot
+are the bound ones, every declared loaded package's version and directory match
+the committed manifest (the directory name must be Julia's slug of the
+package's UUID and git tree hash, CRC-32C recomputed in Python), and the host's
+own reading of the bound files matches too: the bound executable's digest, the
+runtime tree it lies in and the system image against the pin, and the git tree
+of every package directory the committed manifest names in the bound depot
+(Pkg's `GitTools.tree_hash`, recomputed in Python) against the manifest's
+`git-tree-sha1`. File digests are computed once per file state (path, size,
+inode, modification and change times) in a process, so the 630 MB runtime tree
+is read once per run. The depot's precompiled package images are trusted from
+provisioning: neither the host nor Julia 1.10 (which compares only the
+sources' modification times) checks their content. CPU name, optimization
+level and CPU target are recorded only. One request
 is in flight at a time, with a session identity and an occurrence number
 (the frame's request identifier) that increases by one per request. A timeout,
 end of stream, malformed, oversized or unknown response, a mismatched request
 identifier or a worker exit ends the session: the process is killed and
-reaped, the occurrence fails and nothing is retried or substituted; a request
-the host refuses to encode or frame uses no occurrence.
+reaped (a worker that closed its output is given 5 s to exit, and its exit
+code is recorded in the failure: 70 for a depot without the provisioned
+environment, 65 to 67 for a request frame it could not read), the occurrence
+fails and nothing is retried or substituted; a request the host refuses to
+encode or frame uses no occurrence.
 
 **Behind SCR.** With a clean SCR checkout at CIW's pin bound as `scr` (the
 check T097 makes), T145 runs its plan in an isolated interpreter that imports
@@ -338,7 +362,10 @@ recorded: the dispatcher labels every runner's result
 `simulation:deterministic_native_execution`, which does not name the Julia
 worker, and admission of the measurements through `run_experiment_step` is not
 exercised. Without an accepted SCR checkout the same plan runs straight to the
-worker, and the SCR finding stays `not_established` with the reason.
+worker, the SCR finding stays `not_established` with the reason, and the two
+claims that name SCR are made without it: "A halted solve returns no output"
+and "Retained frames decode without Julia" (with SCR, the offline claim also
+requires at least one recorded SCR commitment to recompute).
 
 **Acceptance set.** Thresholds were declared before any result was seen:
 componentwise `|x - x_ref| <= abs + rel |x_ref|` with q: 1e-6 m and 1e-6, v:
@@ -353,12 +380,12 @@ this order (values from the retained host):
 | B: mixed state (omega_0 3, gamma 0.4, m 2.5, q0 -0.7, v0 2.5; 600 samples at 50 Hz) | max errors 1.2e-11, 4.2e-11, 1.8e-10; `independently_verified` |
 | Undamped limit (gamma = 0) | phase error 3.7e-11 rad (`independently_verified`); energy drift 2.8e-10 (`numerically_verified`) |
 | Tolerance ladder, abstol = reltol 1e-6, 1e-8, 1e-10, 1e-12 | max q error 6.6e-7, 4.7e-9, 4.4e-11, 4.3e-13; accepted steps 254, 632, 1584, 3973; function evaluations 1525 to 23,839; no rejected step |
-| Global error against the requested tolerance | v's error reaches 2.6, 1.4, 1.2 and 1.2 times abstol + reltol \|v\| on the four rungs: the tolerance bounds each step's local error estimate, not the global error (a retained counterexample) |
+| Global error against the requested tolerance | v's error reaches 2.6, 1.4, 1.2 and 1.2 times abstol + reltol \|v\| on the four rungs (a retained counterexample to the tolerance bounding the global error). The tolerance is applied to each step's local error estimate, in an RMS norm over [q, v] scaled by the step's endpoints; it does not control the values interpolated at the saved times or the error accumulated over the steps. The RMS norm alone lets one component's scaled estimate reach sqrt(2) = 1.41, which the last three rungs stay within; these data do not separate the causes |
 | A, B, A, a halted request, six worker refusals, A on one worker; A on a restarted worker | the four A occurrences agree exactly (declared agreement 1e-12), with distinct (session, occurrence) pairs over two sessions; same-host byte equality of the four outputs is a separate claim, and agreement across platforms is not established (Windows is not run) |
 | Refusals | the host refuses a boolean, a NaN, gamma > omega_0/2, a duration over 12 s, a repeated time, a grid not starting at 0, a sample at the excluded endpoint, 4097 samples, reltol 1e-15, a boolean maxiters and a request frame over 65,536 bytes before dispatch; the worker refuses a NaN, an unsorted grid, gamma out of bounds, another program, another controller profile and a truncated input, then serves A again; maxiters = 10 halts with `MaxIters` and no output |
-| Channel failures (real worker) | an oversized frame header (`frame_too_large`, the worker exits), a request after that (`session_ended`), a half-sent frame (`response_timeout` after 2 s), a crash (`worker_exited`), a worker started with 2 threads where 1 is declared (`environment_mismatch` at the handshake) |
+| Channel failures (real worker) | an oversized frame header (`frame_too_large`, the worker exits), a request after that (`session_ended`), a half-sent frame (`response_timeout` after 2 s), a crash (the worker killed while it holds half a request frame, so it can never answer: `worker_exited`, exit code -9), a worker started with 2 threads where 1 is declared (`environment_mismatch` at the handshake) |
 | Channel failures (protocol mock) | truncated response (`unexpected_eof`), bad magic and unknown kind (`malformed_response`), oversized (`response_too_large`), another request's identifier (`request_id_mismatch`), exit after the handshake (`worker_exited`) |
-| Offline restore | the retained frames, read back from `julia-frames.json` without Julia, decode and reproduce SCR's recorded commitments |
+| Offline restore | the retained frames, read back from `julia-frames.json` without Julia, decode and reproduce SCR's recorded commitments (without SCR: decode) |
 
 The mock is a Python process that replays worker-1's recorded handshake, and
 the host accepts it: a handshake identifies the environment the process
@@ -370,7 +397,10 @@ manifest digest; its origin family `ordinarydiffeq` was added to the
 recognised independent families for this task (the family is the solver, not
 the Julia language, so CIW-authored Julia code does not count as independent of
 CIW). The worker's own Julia code only states the right-hand side and encodes
-bytes.
+bytes. A fixture that does not complete (halted, refused, failed or with an
+output that does not decode) makes its findings refuted with the observed
+outcome, and T145 stays `partial` and reports it; no value is read from a
+result it did not get.
 
 **Portability.** OpenBLAS kernels do not enter the Julia computation (the
 three-kernel protocol regenerates T145 identically). Julia's code generation

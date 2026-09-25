@@ -162,10 +162,13 @@ source digest, project and manifest digests, relevant package/artifact identitie
 thread settings, numerical preferences and any nonstandard system image.
 An environment mismatch requires a new declared runtime, not silent substitution.
 
-The initial Julia version is **1.10.12 LTS**. It is pinned, installed from the
-official archive against Julia's checksum file, resolved (the committed
-manifest) and executed on Linux x86-64 by T145; the Windows execution test is
-still pending, so the pin is not yet accepted for Windows. At the 2026-09-23 review, Julia's official
+The initial Julia version is **1.10.12 LTS**. It is pinned (the archive's
+checksum, the release commit and the executable, system image and runtime-tree
+digests taken from the verified archive, which the host rechecks on the bound
+files before it accepts a worker), installed from the official archive against
+Julia's checksum file, resolved (the committed manifest, whose package git trees
+the host also rechecks in the bound depot) and executed on Linux x86-64 by
+T145; the Windows execution test is still pending, so the pin is not yet accepted for Windows. At the 2026-09-23 review, Julia's official
 support table listed 1.13.0 as stable and 1.10.12 as LTS; native Windows x86-64 and
 Linux glibc x86-64 are Tier 1 platforms. A newer candidate may be adopted through
 the same gate. See [Julia platform support](https://julialang.org/downloads/support/).
