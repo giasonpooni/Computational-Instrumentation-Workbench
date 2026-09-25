@@ -199,13 +199,18 @@ def _files(directory: Path, problem) -> tuple[dict, bytes | None]:
 
 
 def _parsed(contents: dict, name: str, problem, category: str):
+    """A retained JSON file's object, or None when it is absent, not JSON or not an object (a problem then)."""
     if name not in contents:
         return None
     try:
-        return json.loads(contents[name])
+        value = json.loads(contents[name])
     except ValueError as exc:
         problem(category, f"{name} is not JSON ({exc})")
         return None
+    if not isinstance(value, dict):
+        problem(category, f"{name} is not a JSON object")
+        return None
+    return value
 
 
 def _tests(raw: bytes | None, problem) -> list:

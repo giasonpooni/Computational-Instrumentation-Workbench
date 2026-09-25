@@ -23,6 +23,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import zlib
 
 import pytest
 
@@ -276,6 +277,16 @@ def test_a_resealed_record_naming_other_pins_is_refused(tmp_path, path, change, 
     assert any(problem.startswith(expected) for problem in problems), problems
 
 
+def _verified_at(report: dict, revision: str) -> None:
+    """Reseal the re-verification report as verified by an SCR checkout at ``revision``."""
+    from ciw.proved_heat import _identify
+    from ciw.telemetry import digest
+    report["verifier_runtimes"]["scr"]["revision"] = revision
+    report["verifier_runtime_digest"] = digest(report["verifier_runtimes"])
+    report.pop("verification_id")
+    _identify(report)
+
+
 @pytest.mark.parametrize("path, change, expected", [
     ("gate/gate.json", lambda gate: gate.update(status="failed"), "gate: gate/gate.json status is 'failed'"),
     ("gate/gate.json", lambda gate: gate.update(schema="ciw.proved-heat-gate.v0"),
@@ -306,9 +317,41 @@ def test_a_resealed_record_naming_other_pins_is_refused(tmp_path, path, change, 
      "run_record: run.json limitations is not a list of sentences"),
     ("run.json", lambda run: run.update(observations={records.TOOLCHAIN_EXPERIMENT: {"builds": [{"sha256": "x"}]}}),
      f"run_record: run.json observations.{records.TOOLCHAIN_EXPERIMENT} does not list its builds"),
+    ("run.json", lambda run: run.update(host="  "), "run_record: run.json declares no host"),
+    ("run.json", lambda run: run.update(host=3), "run_record: run.json declares no host"),
+    ("run.json", lambda run: run.update(date="2026-9-24"), "run_record: run.json date is not YYYY-MM-DD"),
+    ("run.json", lambda run: run.update(date=20260924), "run_record: run.json date is not YYYY-MM-DD"),
+    ("run.json", lambda run: run.update(steps=[]), "run_record: run.json lists no workflow steps"),
+    ("run.json", lambda run: run.update(steps=["ran"]), "run_record: run.json lists no workflow steps"),
+    ("gate/gate.json", lambda gate: gate.update(tests_passed=gate["tests_passed"] + 1),
+     "gate: gate/gate.json counts 5 passed tests; gate/tests.xml records 4"),
+    ("gate/gate.json", lambda gate: gate["measurements"].pop("replay"),
+     "gate: gate/gate.json lacks the original and replay measurements"),
+    ("gate/gate.json", lambda gate: gate.pop("measurements"),
+     "gate: gate/gate.json lacks the original and replay measurements"),
+    ("gate/gate.json", lambda gate: gate["native_artifacts"]["engine"].update(byte_count=0),
+     "gate: gate/gate.json does not identify its engine, prover and guest"),
+    ("gate/gate.json", lambda gate: gate["native_artifacts"].update(prover="x"),
+     "gate: gate/gate.json does not identify its engine, prover and guest"),
+    ("gate/gate.json", lambda gate: gate["native_artifacts"].pop("guest"),
+     "gate: gate/gate.json does not identify its engine, prover and guest"),
+    ("gate/gate.json", lambda gate: gate.update(native_artifacts="x"),
+     "gate: gate/gate.json does not identify its engine, prover and guest"),
+    # Either source-checks condition alone refuses the record.
+    ("source-checks.json.gz", lambda checks: checks.update(tracked_build_source_bytes="changed"),
+     "gate: source-checks.json does not record unchanged SP1 build sources"),
+    ("source-checks.json.gz", lambda checks: checks.update(runtime_reference="same_checkout"),
+     "gate: source-checks.json does not record unchanged SP1 build sources"),
+    ("gate/source.json", lambda source: source.update(experiment_id="another-experiment"),
+     "bundles: gate/source.json differs from the source bytes the bundles retain"),
+    ("gate/reverification.json", lambda report: _verified_at(report, "0" * 40),
+     f"pins: gate/reverification.json verifier_runtimes.scr: revision {'0' * 40} is not a revision CIW pins"),
 ], ids=["failed-gate", "gate-schema", "attested-claim", "run-schema", "host-path", "engine", "reverification",
         "bundle", "procedure", "procedure-kind", "observations", "toolchains", "host-facts", "sources",
-        "compiler-archive", "omitted", "notes", "limitations", "toolchain-experiment"])
+        "compiler-archive", "omitted", "notes", "limitations", "toolchain-experiment", "blank-host", "host-not-text",
+        "date-format", "date-not-text", "no-steps", "step-not-object", "tests-passed", "measurement-key",
+        "no-measurements", "zero-byte-engine", "prover-not-object", "no-guest", "natives-not-object",
+        "changed-build-sources", "shared-reference", "source", "verifier-revision"])
 def test_a_resealed_record_with_a_wrong_schema_status_or_bundle_is_refused(tmp_path, path, change, expected):
     record = retain(tmp_path)
     _edit(record, path, change)
@@ -326,6 +369,110 @@ def test_a_skipped_native_test_is_refused(tmp_path):
     assert f"gate: gate/tests.xml records {records.REQUIRED_NATIVE_TESTS[0]} as skipped" in problems
 
 
+@pytest.mark.parametrize("path, value, expected", [
+    ("run.json", [], ["run_record: run.json is not a JSON object",
+                      "run_record: run.json is not ciw.lab-proved-heat-run.v1"]),
+    ("gate/gate.json", [], ["gate: gate/gate.json is not a JSON object",
+                            "gate: gate/gate.json is not ciw.proved-heat-gate.v1"]),
+    ("build.json", None, ["gate: build.json is not a JSON object"]),
+    ("source-checks.json.gz", [], ["gate: source-checks.json is not a JSON object"]),
+    ("gate/original.json.gz", [], ["bundles: gate/original.json is not a JSON object"]),
+    ("gate/replay.json.gz", None, ["bundles: gate/replay.json is not a JSON object"]),
+    ("gate/reverification.json", [], ["bundles: gate/reverification.json is not a JSON object"]),
+], ids=["run", "gate", "build", "source-checks", "original", "replay", "reverification"])
+def test_a_resealed_record_whose_json_file_is_not_an_object_is_refused(tmp_path, path, value, expected):
+    # No check could read such a file, so each is refused by name (and build.json null no longer crashes).
+    record = retain(tmp_path)
+    data = json.dumps(value).encode()
+    (record / path).write_bytes(records.compress(data) if path.endswith(".gz") else data)
+    _reseal(record)
+    inspected = records.inspect_record(record)
+    assert inspected["problems"] == expected and inspected["summary"] is None
+
+
+def _manifest_listing_an_unknown_file(record: Path, manifest: dict) -> dict:
+    (record / "gate" / "notes.txt").write_bytes(b"notes")
+    manifest["files"]["gate/notes.txt"] = {"sha256": sha256(b"notes").hexdigest(), "bytes": 5}
+    return manifest
+
+
+@pytest.mark.parametrize("change, expected", [
+    (lambda record, manifest: [manifest], "manifest.json is not ciw.lab-proved-heat-manifest.v1"),
+    (lambda record, manifest: {**manifest, "schema": "ciw.lab-proved-heat-manifest.v0"},
+     "manifest.json is not ciw.lab-proved-heat-manifest.v1"),
+    (lambda record, manifest: {**manifest, "files": {**manifest["files"], "build.json": "listed"}},
+     "manifest.json lists 'build.json', which is not a file of a proved-heat record"),
+    (_manifest_listing_an_unknown_file,
+     "manifest.json lists 'gate/notes.txt', which is not a file of a proved-heat record"),
+], ids=["not-an-object", "schema", "entry-not-an-object", "unknown-file"])
+def test_a_malformed_manifest_is_refused_by_name(tmp_path, change, expected):
+    record = retain(tmp_path)
+    manifest = json.loads((record / "manifest.json").read_text(encoding="utf-8"))
+    (record / "manifest.json").write_text(json.dumps(change(record, manifest)), encoding="utf-8")
+    inspected = records.inspect_record(record)
+    assert inspected["problems"] == [f"integrity: {expected}"] and inspected["summary"] is None
+
+
+def _replace(directory: Path, path: str, data: bytes) -> None:
+    """Replace one retained file and reseal its manifest digest; the content digest stays the gate's bytes."""
+    manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+    (directory / path).write_bytes(data)
+    manifest["files"][path].update(sha256=sha256(data).hexdigest(), bytes=len(data))
+    (directory / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+@pytest.mark.parametrize("change, expected", [
+    (lambda data, content: data + b"trailing bytes", "is not exactly one complete gzip stream"),
+    (lambda data, content: data + records.compress(b"{}"), "is not exactly one complete gzip stream"),
+    (lambda data, content: data[:-8], "is not exactly one complete gzip stream"),
+    (lambda data, content: zlib.compress(content, 9), "is not valid gzip (error)"),
+], ids=["trailing-data", "second-member", "no-trailer", "zlib-stream"])
+def test_a_retained_gz_file_must_be_exactly_one_gzip_stream(tmp_path, change, expected):
+    # Each stream still holds the gate's exact bytes, so only the stream around them refuses the record.
+    record = retain(tmp_path)
+    path = "gate/replay.json.gz"
+    data = (record / path).read_bytes()
+    _replace(record, path, change(data, gzip.decompress(data)))
+    inspected = records.inspect_record(record)
+    assert inspected["problems"] == [f"integrity: {path} {expected}"] and inspected["summary"] is None
+
+
+@pytest.mark.parametrize("spare", [0, -1], ids=["exactly-the-limit", "one-byte-over"])
+def test_retained_content_may_expand_to_exactly_the_size_limit(tmp_path, monkeypatch, spare):
+    record = retain(tmp_path)
+    manifest = json.loads((record / "manifest.json").read_text(encoding="utf-8"))
+    sizes = {path: entry["content"]["bytes"] for path, entry in manifest["files"].items() if path.endswith(".gz")}
+    limit = max(sizes.values()) + spare
+    monkeypatch.setattr(records, "MAX_CONTENT_BYTES", limit)
+    problems = records.inspect_record(record)["problems"]
+    assert problems == [f"integrity: {path} expands beyond {limit} bytes"
+                        for path, size in sorted(sizes.items()) if size > limit]
+    assert problems or spare == 0
+
+
+def test_a_one_byte_native_artifact_is_the_smallest_the_gate_may_name(tmp_path, monkeypatch):
+    # A zero-byte one is refused (above); CIW's bundle validator admits one byte, and so does the record.
+    monkeypatch.setitem(globals(), "ENGINE", b"e")
+    inspected = records.inspect_record(retain(tmp_path))
+    assert inspected["problems"] == []
+    assert inspected["summary"]["gate"]["native_artifacts"]["engine"]["byte_count"] == 1
+
+
+def test_a_retained_runtime_needs_a_source_tree_ciw_records(tmp_path, monkeypatch):
+    # CIW's proved-heat pin records its tree; were no tree recorded for that revision, no runtime would be bound to one.
+    from ciw import proved_heat
+    from ciw.lab import bridge
+    record = retain(tmp_path)
+    declared = bridge.declared_pins()
+    trees = {revision: found for revision, found in declared["trees"].items()
+             if revision != proved_heat.PIN["revision"]}
+    monkeypatch.setattr(bridge, "declared_pins", lambda: {**declared, "trees": trees})
+    assert records.inspect_record(record)["problems"] == [
+        f"pins: {where}: CIW records no source tree for its revision"
+        for where in ("gate/original.json runtimes.scr", "gate/replay.json runtimes.scr",
+                      "gate/reverification.json verifier_runtimes.scr")]
+
+
 @pytest.mark.parametrize("arrange, match", [
     (lambda run: _write_json(run / "gate" / "gate.json", lambda gate: gate.update(status="failed")),
      "did not pass"),
@@ -336,7 +483,15 @@ def test_a_skipped_native_test_is_refused(tmp_path):
      "other bundles"),
     (lambda run: _write_json(run / "gate" / "gate.json", lambda gate: gate["sp1"].update(revision="0" * 40)),
      "fails verification"),
-], ids=["failed-gate", "no-run-description", "incomplete-description", "incomplete-output", "workspace", "pins"])
+    (lambda run: _write_json(run / "local-run.json", lambda local: local.update(schema="ciw.proved-heat-local-run.v0")),
+     "is not ciw.proved-heat-local-run.v1"),
+    (lambda run: (run / "local-run.json").write_text("[]"), "is not ciw.proved-heat-local-run.v1"),
+    (lambda run: (run / "gate" / "gate.json").write_text("{"), "gate/gate.json is unreadable"),
+    # Refused before anything is written, not by the inspection of a written copy.
+    (lambda run: _write_json(run / "local-run.json", lambda local: local["host_facts"].update(home="/home/operator")),
+     "Refusing the run description: run.json.host_facts.home holds a host path"),
+], ids=["failed-gate", "no-run-description", "incomplete-description", "incomplete-output", "workspace", "pins",
+        "description-schema", "description-not-an-object", "unreadable-gate", "description-host-path"])
 def test_retention_refuses_a_run_it_cannot_retain_and_leaves_nothing(tmp_path, arrange, match):
     run = gate_output(tmp_path / "gate-run")
     arrange(run)
