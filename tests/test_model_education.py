@@ -47,6 +47,10 @@ def test_preview_is_bounded_hypothetical_and_changes_the_model():
     assert preview["authority"]["result_id"] == "not_assigned"
     assert preview["authority"]["retention"] == "not_performed"
     assert preview["output"]["energy_j"][-1] == pytest.approx(preview["output"]["energy_j"][0])
+    assert preview["comparison"]["q_m"]["max_abs_delta"] > 0
+    assert preview["comparison"]["energy"]["preview_final_j"] == pytest.approx(
+        preview["comparison"]["energy"]["preview_initial_j"])
+    assert preview["comparison"]["energy"]["baseline_final_j"] < preview["comparison"]["energy"]["baseline_initial_j"]
     assert preview["base_source_digest"].startswith("sha256:")
 
 
