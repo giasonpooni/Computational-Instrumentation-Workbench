@@ -737,6 +737,8 @@ def test_refresh_keeps_figure_platform_records_and_requires_their_binding(tmp_pa
     (run / "reports" / "T001.json").write_text(json.dumps({"task_id": "T001"}), encoding="utf-8")
     (run / "reports" / "T077.json").write_text(json.dumps({"task_id": "T077", "provider_runtime_identity": {
         "telemetry-stack": {"gsie": {"state": "ready"}}, "executed_runtimes": {"gsie": {}}}}), encoding="utf-8")
+    (run / "reports" / "T145.json").write_text(json.dumps({"task_id": "T145", "provider_runtime_identity": {
+        "julia": {"accepted": True, "path": "scr"}}}), encoding="utf-8")
     for name in ("queue-state.json", "REPORTS.md", "index.html"):
         (run / name).write_text("", encoding="utf-8")
     gate = {"schema": "ciw.lab-clean-room-gate.v1", "python": "3.12.3",
