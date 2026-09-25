@@ -309,6 +309,19 @@ def test_generic_diffgeom_assembly_is_evaluated_at_the_right_jet(generic_assembl
     assert abs(swapped[f_uv] - swapped[e_vv]) > 1e-2
     swapped[f_uv], swapped[e_vv] = swapped[e_vv], swapped[f_uv]
     assert abs(generic_assembly(swapped)["gaussian_curvature"] - surfaces["gaussian-bump"].gaussian_curvature(u)) > 1e-3
+    # The bump's generic curvature at its symbolic 2-jet (which T034 simplifies exactly against the restated Monge
+    # closed form) and that restatement both take the interface's value at the point; the misnamed jet does not.
+    import sympy as sp
+    from ciw.lab.surfaces_discrete_ad import generic_curvature
+
+    at_u = surfaces["gaussian-bump"].gaussian_curvature(u)
+    curvature, (u_sym, v_sym) = generic_curvature(generic_assembly, *forms["gaussian-bump"])
+    declared = sd._declared_curvature("gaussian-bump", surfaces["gaussian-bump"], sp, u_sym, v_sym)
+    for expression in (curvature, declared):
+        assert float(expression.subs({u_sym: sp.Rational(u[0]), v_sym: sp.Rational(u[1])})) == pytest.approx(
+            at_u, rel=1e-13, abs=1e-15)
+    assert abs(float(generic_curvature(mutant, *forms["gaussian-bump"])[0].subs(
+        {u_sym: sp.Rational(u[0]), v_sym: sp.Rational(u[1])})) - at_u) > 1e-3
     # On a directly assembled surface whose off-diagonal metric depends on both coordinates, the two routes agree.
     direct, _, _ = diffgeom_reference(*forms["saddle"])
     pointwise = pointwise_diffgeom_reference(*forms["saddle"], generic_assembly)
@@ -402,6 +415,12 @@ def test_t034_report(tmp_path):
     assert set(symbolic["sympy_diffgeom"]) == set(sd.DIFFGEOM_KEYS)
     assert set(sd.DIFFGEOM_KEYS) | set(sd.POINTWISE_KEYS) == set(routes["surfaces"])
     assert routes["taylor_jet_check"]["mismatched_components"] == []
+    # Exact through the generic route where it is cheap: the bump's curvature at its symbolic 2-jet.
+    assert list(routes["exact_curvature"]) == ["gaussian-bump"]
+    assert routes["exact_curvature"]["gaussian-bump"]["difference_simplifies_to_zero"] is True
+    bump_exact = findings[next(claim for claim in pointwise if "Riemann" in claim)]["basis"]["checks"][2]
+    assert (bump_exact["reference_kind"], bump_exact["observed"], bump_exact["passed"]) == ("exact_arithmetic", 0.0,
+                                                                                            True)
     # ciw dual numbers against ciw surfaces are same-origin comparisons; only the
     # self-test against hand-derived closed forms is analytic.
     for claim, record in findings.items():
@@ -413,6 +432,8 @@ def test_t034_report(tmp_path):
     assert {c["reference_kind"] for c in self_test["basis"]["checks"]} == {"analytic"}
     step = next(record for claim, record in findings.items() if claim.startswith("Complex-step"))
     assert step["evidence_status"] == "numerically_verified"
+    # The claim states how many of the discarding surfaces are wrong: not all of them.
+    assert "are wrong on 5 of the 7 conformance surfaces whose formulas discard" in step["claim"]
     assert step["value"] == {"carried": 3, "imaginary_part_discarded": 7, "refused": 0, "wrong": 5}
     assert step["counterexample"]["witness"]["wrong"] == ["gaussian-bump", "gaussian-bump-shear", "rotated-torus",
                                                            "sphere", "torus"]

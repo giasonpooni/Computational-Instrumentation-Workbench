@@ -465,15 +465,33 @@ class GenericDiffgeom:
         return _connection(self._function(*[float(value) for value in jet]))
 
 
+def _symbolic_jet(sp, kind, formula, u, v):
+    """The metric 2-jet of a formula by sympy differentiation, 18 expressions in GenericDiffgeom.symbols order."""
+    g = _symbolic_metric(sp, kind, formula, u, v)
+    return [sp.diff(g[i][j], u, p, v, q) for i, j in JET_COMPONENTS for p, q in JET_ORDERS]
+
+
 def metric_jet(kind, formula):
     """u -> the metric 2-jet of a formula by sympy differentiation, 18 floats in GenericDiffgeom.symbols order."""
     import sympy as sp
 
     u, v = sp.symbols("u v", real=True)
-    g = _symbolic_metric(sp, kind, formula, u, v)
-    jet = [sp.diff(g[i][j], u, p, v, q) for i, j in JET_COMPONENTS for p, q in JET_ORDERS]
-    function = sp.lambdify((u, v), jet, modules="math", cse=True)
+    function = sp.lambdify((u, v), _symbolic_jet(sp, kind, formula, u, v), modules="math", cse=True)
     return lambda point: function(float(point[0]), float(point[1]))
+
+
+def generic_curvature(assembly: GenericDiffgeom, kind, formula):
+    """The generic assembly's curvature K at a formula's symbolic 2-jet, exact in its parameters, and (u, v).
+
+    For an exact identity with a closed form through the generic route; its
+    cost is the simplification, which grows with the jet expressions
+    (docs/lab/SURFACE_INTERFACE.md records it for the two gaussian bumps).
+    """
+    import sympy as sp
+
+    u, v = sp.symbols("u v", real=True)
+    jet = dict(zip(assembly.symbols, _symbolic_jet(sp, kind, formula, u, v)))
+    return assembly.expressions[8].xreplace(jet), (u, v)
 
 
 def pointwise_diffgeom_reference(kind, formula, assembly: GenericDiffgeom):

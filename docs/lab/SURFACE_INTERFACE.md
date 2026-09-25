@@ -166,11 +166,11 @@ rounded by `nsimplify`. The same formula feeds:
     plane-polar 0.
   * *Generic, evaluated at the 2-jet*, for gaussian-bump,
     gaussian-bump-shear and rotated-torus. The direct route is too slow for
-    them: measured on one core of the lab host (sympy 1.14.0), sympy.diffgeom
-    took 7.3 s for the gaussian bump and 44 s for the rotated torus (whose
-    exact rational rotation entries make its metric expressions about 15
-    times as long as the torus's), and had not finished the sheared bump
-    after 600 s. Instead `GenericDiffgeom` runs
+    the three together: measured on one core of the lab host (sympy 1.14.0),
+    sympy.diffgeom took 7.3 s for the gaussian bump and 44 s for the rotated
+    torus (whose exact rational rotation entries make its metric expressions
+    about 15 times as long as the torus's), and had not finished the sheared
+    bump after 600 s. Instead `GenericDiffgeom` runs
     `metric_to_Christoffel_2nd` and `metric_to_Riemann_components` once
     (about 1.7 s) on a metric whose components are undetermined functions
     `E(u, v)`, `F(u, v)`, `G(u, v)`. Every term of the result is one of those
@@ -187,13 +187,20 @@ rounded by `nsimplify`. The same formula feeds:
     metric of a rational jet with 18 distinct nonzero entries directly and
     its `Γ` and `K` at the origin equal the generic expressions at the jet in
     all 9 components; and the gap between the two routes on the seven directly
-    assembled surfaces, 2.8e-16 (`Γ`) and 8.1e-16 (`K`). With this route
-    T034 takes about 8 s on one core (4 s without it). Across the SkylakeX,
-    Haswell and Sandybridge OpenBLAS kernels the two residuals moved by at
-    most 7e-17 (the sympy side is evaluated with Python's `math`; the ciw
-    side's 2×2 inverse and determinant follow the kernel), far inside their
-    regression tolerance of 1e-12, the threshold their claims state, as for
-    the other residual findings.
+    assembled surfaces, 2.8e-16 (`Γ`) and 8.1e-16 (`K`). The curvature
+    finding carries one more same-origin check, an exact identity through the
+    generic route: for gaussian-bump, the generic `K` at the bump's symbolic
+    2-jet (`generic_curvature`) minus the Monge closed form
+    `(f_xx f_yy − f_xy²)/(1 + f_x² + f_y²)²` restated from `GaussianBump`'s
+    height derivatives simplifies to 0 (about 1 s on one core). The same
+    simplification for the sheared bump takes about 30 s and is not run, and
+    for the rotated torus the torus's closed form cannot hold exactly (below).
+    With this route T034 takes about 9 s on one core (4 s without it).
+    Across the SkylakeX, Haswell and Sandybridge OpenBLAS kernels the two
+    residuals moved by at most 7e-17 (the sympy side is evaluated with
+    Python's `math`; the ciw side's 2×2 inverse and determinant follow the
+    kernel), far inside their regression tolerance of 1e-12, the threshold
+    their claims state, as for the other residual findings.
 * **ciw assembly of sympy derivatives**: `Γ` and `R₁₂₁₂ / det g` written in
   ciw code from sympy's derivatives, for all ten surfaces. Residual 5.6e-16,
   recorded as a same-origin `cross_implementation` check
@@ -228,10 +235,11 @@ rounded by `nsimplify`. The same formula feeds:
   The core formulas call `math.sin`, `math.exp` and the like on NumPy
   complex scalars, which NumPy converts to their real part with only a
   ComplexWarning. So a complex step through the interface neither
-  differentiates nor raises on five surfaces, a counterexample recorded
-  with a check that counts them (5 ≥ 1). Refusal is exercised on a test
-  surface. Complex-step derivatives of the whole interface wait on a core
-  change (below).
+  differentiates nor raises on five surfaces. The finding's claim states
+  that count, wrong on 5 of the 7 surfaces that discard the imaginary part,
+  and its check confirms the counterexample (5 ≥ 1). Refusal is exercised
+  on a test surface. Complex-step derivatives of the whole interface wait
+  on a core change (below).
 
 When sympy is absent the task reports `partial` and records the symbolic
 findings as `not_established`; the dual numbers and the complex step need
@@ -610,13 +618,16 @@ guard refuses from θ ≈ 1e-4.
   rotated-torus the assembly is of a generic metric, evaluated in floating
   point at each point's 2-jet; naming its terms by jet entry is written in
   ciw, and it is checked exactly on one rational Taylor metric and
-  numerically against the direct route on seven surfaces. No exact symbolic
-  identity is shown for these three: the rotated torus's binary rotation
-  entries are not exactly orthogonal (their exact RᵀR differs from I by up
-  to 1.6e-16), so its exact metric is not the torus's, and no closed form
-  is restated for the three. The closed-form re-expressions and the
-  restated closed forms are hand-written from the same definitions as the
-  core, so a shared misreading of a surface definition would pass both.
+  numerically against the direct route on seven surfaces. An exact symbolic
+  identity is shown for the gaussian bump's curvature only. For the sheared
+  bump the same simplification takes about 30 s on one core and is not run.
+  For the rotated torus the torus's closed form cannot hold exactly: its
+  binary rotation entries are not exactly orthogonal (their exact RᵀR
+  differs from I by up to 1.6e-16), so its exact metric is not the
+  torus's. No exact identity is shown for the Christoffel symbols of the
+  three. The closed-form re-expressions and the restated closed forms are
+  hand-written from the same definitions as the core, so a shared
+  misreading of a surface definition would pass both.
   Every comparison needs sympy for its independent side; no second
   computer algebra system is installed here.
 * The complex step is exercised through the interface as it is: it tests
@@ -647,9 +658,11 @@ testing a difference-based metric derivative.
   code per failed identity before any lab task integrates on it.
 * T034 (CIW change): make the core surface formulas carry complex
   coordinates (NumPy functions rather than `math` functions of NumPy
-  complex scalars) or refuse them with a named code, so that a complex
-  step checks `dg` to rounding on the seven surfaces whose formulas now
-  cast complex coordinates to real, five of them with wrong derivatives.
+  complex scalars), so that a complex step checks `dg` to rounding on the
+  seven surfaces whose formulas now cast complex coordinates to real, five
+  of them with wrong derivatives, or else refuse complex coordinates with a
+  named code, so that such a step fails loudly instead of returning wrong
+  derivatives.
   (The independent assembly for gaussian-bump, gaussian-bump-shear and
   rotated-torus that this question used to ask for is delivered above.)
 * T035 (queue extension after T168): with metric samples carrying noise σ,
