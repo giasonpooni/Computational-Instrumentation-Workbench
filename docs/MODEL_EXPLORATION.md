@@ -42,3 +42,8 @@ The preview uses the independent analytic reference, so it is useful for
 teaching equations, units, damping and energy. It does not substitute for a
 Julia provider execution or for physical calibration.
 
+Each preview also reports a `comparison` object. It gives `max_abs_delta` and
+`final_delta` for position, velocity and energy, plus baseline and preview
+energy endpoints. This makes the effect of a bounded parameter change visible
+without confusing an offline what-if with a retained experiment.
+
