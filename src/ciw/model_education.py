@@ -138,7 +138,7 @@ def oscillator_model_card(source, result_data, provenance):
             "suggested_experiments": [
                 "set model.gamma_s_inv=0 and compare energy conservation",
                 "increase model.mass_kg while holding the initial state fixed",
-                "compare underdamped and critically damped responses",
+                "compare weakly and strongly underdamped responses within the declared bound",
             ],
         },
         "provenance": deepcopy(provenance),
