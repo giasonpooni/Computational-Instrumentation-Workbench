@@ -11,7 +11,7 @@ admission of evidence for a downstream purpose.
 | Increment | Scope | Readiness |
 | --- | --- | --- |
 | 1. Existing SCR proof workload | Expose bounded integer heat diffusion, retained input/output and independently checked SCR proof records in one shared investigation | First implementation increment; a successful native SP1 build/prove/verify gate is required before claiming a working cryptographic path |
-| 2. Julia oscillator | Run numerical integration through SCR and compare with CIW's analytical oscillator reference | Planned; no Julia operation or verified Julia environment is supplied by this document |
+| 2. Julia oscillator | Run numerical integration through SCR and compare with CIW's analytical oscillator reference | Implemented on Linux x86-64 as lab task T145 (see [Status of the oscillator increment](#status-of-the-oscillator-increment)); Windows execution not yet run, so the operation is not accepted |
 | 3. Exact topology | Compute candidate ordinary Betti numbers over F2 in Julia, then independently recompute them in a registered Rust/SP1 checker | Planned; no topology operation, registered guest or proof is supplied by this document |
 | 4. Measured scaling | Record execution, proving and verification time, peak memory and guest cycles before widening bounds | Required before expanding workloads; no performance capacity is asserted here |
 
@@ -19,6 +19,28 @@ An unavailable runtime, a protocol fixture and a mock verifier must remain
 distinguishable from a successfully verified cryptographic computation. Installing
 Julia or SP1 does not by itself pass an integration gate. This document specifies
 the next contracts; it does not add planned operations to the available catalog.
+
+### Status of the oscillator increment
+
+The worker, its environment and the acceptance set below exist in the lab
+queue, not in the workbench's operation catalog: `src/ciw/lab/julia/` holds the
+pin (Julia 1.10.12 LTS, the official archive and its checksum), the worker
+(`oscillator_worker.jl`, one allowlisted operation), `Project.toml` and the
+machine-generated `Manifest.toml`; `scripts/provision_julia.py` provisions and
+precompiles them separately from execution; `ciw.lab.julia_worker` is the host
+(handshake comparison, framed messages, one request in flight, failures end the
+session); and T145 dispatches the fixtures through
+`execution.dispatcher.SpecificationDispatcher` with the worker as its runner and
+recomputes SCR's commitments from the retained bytes. The encodings, handshake
+fields, fixtures, thresholds and results are specified in
+[lab/IMPLEMENTATION_TARGETS.md](lab/IMPLEMENTATION_TARGETS.md#julia). Every
+fixture of the acceptance set below that is computational runs on Linux
+x86-64; the Windows x86-64 run (the archive is pinned) is the open part, so
+the oscillator operation is not yet accepted, and adding it to the workbench
+catalog is a separate step after that. SCR's dispatcher at its pin hosts the
+worker unchanged; it labels every runner's result
+`simulation:deterministic_native_execution`, and admission through
+`run_experiment_step` is not yet exercised.
 
 | Component | Responsibility |
 | --- | --- |
@@ -140,9 +162,13 @@ source digest, project and manifest digests, relevant package/artifact identitie
 thread settings, numerical preferences and any nonstandard system image.
 An environment mismatch requires a new declared runtime, not silent substitution.
 
-A candidate initial Julia version is **1.10.12 LTS**, pending actual installation,
-package resolution and Windows/Linux execution tests. This is a candidate, not
-an installed or accepted pin. At the 2026-09-23 review, Julia's official
+The initial Julia version is **1.10.12 LTS**. It is pinned (the archive's
+checksum, the release commit and the executable, system image and runtime-tree
+digests taken from the verified archive, which the host rechecks on the bound
+files before it accepts a worker), installed from the official archive against
+Julia's checksum file, resolved (the committed manifest, whose package git trees
+the host also rechecks in the bound depot) and executed on Linux x86-64 by
+T145; the Windows execution test is still pending, so the pin is not yet accepted for Windows. At the 2026-09-23 review, Julia's official
 support table listed 1.13.0 as stable and 1.10.12 as LTS; native Windows x86-64 and
 Linux glibc x86-64 are Tier 1 platforms. A newer candidate may be adopted through
 the same gate. See [Julia platform support](https://julialang.org/downloads/support/).

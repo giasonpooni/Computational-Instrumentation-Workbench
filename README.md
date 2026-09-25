@@ -310,7 +310,10 @@ separate decisions.
 2. **One Julia model and estimation experiment.** Pin the Julia environment,
    exercise the SCR bridge against an independent reference, then share a small
    plant-and-sensor model across replay, observer comparison and a constrained
-   measurement-selection problem. Keep Python cross-checks.
+   measurement-selection problem. Keep Python cross-checks. The first two steps
+   run in the lab queue for the damped oscillator on Linux
+   ([T145](docs/lab/IMPLEMENTATION_TARGETS.md#julia)); Windows execution and the
+   shared model remain.
 3. **A challenged physical claim.** Record a small thermal experiment, withhold
    an independent reference sensor, compare estimators on separate runs, and
    test dropouts and changed cooling. Retain raw data, calibration, uncertainty,

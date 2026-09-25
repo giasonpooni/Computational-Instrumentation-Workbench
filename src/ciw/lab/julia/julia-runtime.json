@@ -1,0 +1,32 @@
+{
+  "schema": "ciw.julia-runtime-pin.v1",
+  "version": "1.10.12",
+  "channel": "LTS",
+  "commit": "d93beab124c850d5f600f290069853e81413f7ca",
+  "checksums_url": "https://julialang-s3.julialang.org/bin/checksums/julia-1.10.12.sha256",
+  "package_server": "https://pkg.julialang.org",
+  "archives": {
+    "linux-x86_64": {
+      "url": "https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.12-linux-x86_64.tar.gz",
+      "sha256": "b0c50dfe349d76ffc8580d24e0c0be623988a6d91ed57ad8b73c0137fd27bc0d",
+      "root": "julia-1.10.12",
+      "executable": "bin/julia",
+      "machine": "x86_64-linux-gnu",
+      "sysimage": "../lib/julia/sys.so",
+      "executable_sha256": "1c7ea3ba2e49e6c4a96ca8b80e34f984f65c1dbcdc1423f33a63f2bc14a69a5b",
+      "sysimage_sha256": "ea593a4a2c853de1b00d8cb0fcb6a5bbf056efcd9ba6886168adf26a95a384b9",
+      "tree_sha256": "21956efb683ce743ce691c0fd1eac8b8117b35371b0fe9d8d820f7a241a3f7fa"
+    },
+    "windows-x86_64": {
+      "url": "https://julialang-s3.julialang.org/bin/winnt/x64/1.10/julia-1.10.12-win64.zip",
+      "sha256": "88177b1089a01f5254454ecbda888542d6038aba4d017a4bf8bc860322d7f9de",
+      "root": "julia-1.10.12",
+      "executable": "bin/julia.exe",
+      "machine": "x86_64-w64-mingw32",
+      "sysimage": "../lib/julia/sys.dll",
+      "executable_sha256": "29a5cb5bde6a3f4a151f6e714591ca9344638303d9ed2a893ab31ada3de5d103",
+      "sysimage_sha256": "190e3d9a6ffbc1b6a6d6fa311127b984f2b892083001fd8e7bde5e09c17ae0c7",
+      "tree_sha256": "a461b484c24e62f240d7d8bcf250ef7a570a4afc805864f4631247740784274d"
+    }
+  }
+}

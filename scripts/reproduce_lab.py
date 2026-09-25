@@ -42,7 +42,8 @@ TEST_VARIABLES = {"csg": "CIW_LAB_CSG_REPO", "ftr": "CIW_LAB_FTR_REPO", "scr": "
                   "set": "CIW_LAB_SET_REPO", "ppda": "CIW_LAB_PPDA_REPO",
                   "scr-exchange": "CIW_LAB_SCR_EXCHANGE_REPO", "scr-engine": "CIW_LAB_SCR_ENGINE",
                   "ftr-python": "CIW_LAB_FTR_PYTHON", "plsr-python": "CIW_LAB_PLSR_PYTHON",
-                  "proved-heat-record": "CIW_LAB_PROVED_HEAT_RECORD", "telemetry-stack": "CIW_LAB_TELEMETRY_STACK"}
+                  "proved-heat-record": "CIW_LAB_PROVED_HEAT_RECORD", "telemetry-stack": "CIW_LAB_TELEMETRY_STACK",
+                  "julia": "CIW_LAB_JULIA_EXECUTABLE", "julia-depot": "CIW_LAB_JULIA_DEPOT"}
 # Operator hardware captures the energy tasks read; the gate acquires and analyzes none.
 OPERATOR_CAPTURES = ("CIW_LAB_RAPL_LOG", "CIW_LAB_ENERGY_LOG", "CIW_LAB_NVIDIA_SMI_CSV", "CIW_LAB_NVIDIA_SMI_UTC_OFFSET")
 # The clean room reproduces the packaged queue: interpreter paths, pytest options, queue

@@ -293,9 +293,12 @@ def _identity(value, name):
 # routines the compared ciw code does not itself call; reviewers check that
 # per finding. pygeodesic (Kirsanov's exact MMP geodesics) and potpourri3d
 # (geometry-central, including FlipOut) are C++ mesh-geodesic libraries.
+# ordinarydiffeq is SciML's OrdinaryDiffEq.jl solver family, run by T145's
+# Julia worker; the family is the solver, not Julia itself, so CIW-authored
+# Julia code does not become independent of CIW by its language.
 CIW_ORIGIN = "ciw"
 INDEPENDENT_ORIGINS = frozenset({
-    "scipy", "sympy", "mpmath", "numpy", "cpython", "zlib", "git", "pygeodesic", "potpourri3d",
+    "scipy", "sympy", "mpmath", "numpy", "cpython", "zlib", "git", "pygeodesic", "potpourri3d", "ordinarydiffeq",
     "curved-surface-geodesic-sensitivity-runtime", "flat-torus-geodesic-reference",
     "parameterized-lyapunov-stability-runtime", "scientific-computation-runtime",
 })

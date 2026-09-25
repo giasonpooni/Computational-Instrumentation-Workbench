@@ -26,8 +26,12 @@ jobs:
       - run: python -m pip install 'setuptools>=77' wheel
       - name: Install the Rust toolchain the proved-heat gate pins (T099 rebuilds execution-cli with it)
         run: rustup toolchain install 1.94.0 --profile minimal
+      - name: Provision Julia 1.10.12 LTS and T145's worker environment (official archive and checksum, instantiate, precompile)
+        run: python scripts/provision_julia.py --prefix "$RUNNER_TEMP/julia" --depot "$RUNNER_TEMP/julia-depot"
       - name: Clean-room queue with pinned CSG, FTR and PLSR; verify retained reports
-        run: python scripts/check_lab.py --output-dir results/lab-gate
+        run: >-
+          python scripts/check_lab.py --output-dir results/lab-gate
+          --julia "$RUNNER_TEMP/julia/julia-1.10.12/bin/julia" --julia-depot "$RUNNER_TEMP/julia-depot"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

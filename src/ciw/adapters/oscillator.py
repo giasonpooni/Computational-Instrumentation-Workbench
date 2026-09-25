@@ -85,6 +85,24 @@ def _finite_tree(value: Any, name: str = "run") -> None:
         _number(value, name)
 
 
+def closed_form(time: np.ndarray, *, omega_0: float, gamma: float, mass: float, q0: float,
+                v0: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Closed-form q, v and energy of q'' + 2 gamma q' + omega_0**2 q = 0 at ``time``.
+
+    Valid for the underdamped and undamped cases (0 <= gamma < omega_0), with
+    the state [q0, v0] at time 0 and energy 0.5*mass*(v**2 + omega_0**2*q**2).
+    """
+    omega_d = math.sqrt(omega_0 * omega_0 - gamma * gamma)
+    b = (v0 + gamma * q0) / omega_d
+    cosine, sine = np.cos(omega_d * time), np.sin(omega_d * time)
+    envelope = np.exp(-gamma * time)
+    q = envelope * (q0 * cosine + b * sine)
+    v = envelope * ((b * omega_d - gamma * q0) * cosine
+                    + (-q0 * omega_d - gamma * b) * sine)
+    energy = 0.5 * mass * (v * v + omega_0 * omega_0 * q * q)
+    return q, v, energy
+
+
 def make_demo_run() -> dict:
     """Return a deterministic analytic underdamped oscillator recording.
 
@@ -95,14 +113,7 @@ def make_demo_run() -> dict:
     duration, sample_rate = 12.0, 64.0
     omega_0, gamma, mass, q0, v0 = 2.0 * math.pi * 0.8, 0.15, 1.0, 1.0, 0.0
     time = np.arange(int(duration * sample_rate), dtype=np.float64) / sample_rate
-    omega_d = math.sqrt(omega_0 * omega_0 - gamma * gamma)
-    b = (v0 + gamma * q0) / omega_d
-    cosine, sine = np.cos(omega_d * time), np.sin(omega_d * time)
-    envelope = np.exp(-gamma * time)
-    q = envelope * (q0 * cosine + b * sine)
-    v = envelope * ((b * omega_d - gamma * q0) * cosine
-                    + (-q0 * omega_d - gamma * b) * sine)
-    energy = 0.5 * mass * (v * v + omega_0 * omega_0 * q * q)
+    q, v, energy = closed_form(time, omega_0=omega_0, gamma=gamma, mass=mass, q0=q0, v0=v0)
 
     # A sampled state-space energy surface, not a field measurement.
     q_axis = np.linspace(-1.1, 1.1, 25, dtype=np.float64)

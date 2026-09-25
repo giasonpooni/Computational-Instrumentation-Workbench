@@ -29,6 +29,12 @@ with ``--no-compare``).
 ``--blas-core CORE`` runs the clean room on that OpenBLAS kernel (for example
 Haswell or Sandybridge), to verify the retained run on the kernels other hosts
 would pick; the gate record names the kernel the clean room ran.
+
+``--julia`` and ``--julia-depot`` (or ``CIW_LAB_JULIA_EXECUTABLE`` and
+``CIW_LAB_JULIA_DEPOT``) bind the Julia 1.10.12 runtime and depot that
+``scripts/provision_julia.py`` provisioned as the ``julia`` and ``julia-depot``
+roles, for T145's worker; like the rustup toolchain T099 uses, the gate does
+not install Julia itself (CI's lab job provisions it first).
 """
 from __future__ import annotations
 
@@ -129,7 +135,13 @@ def main() -> int:
     parser.add_argument("--no-compare", action="store_true")
     parser.add_argument("--blas-core", metavar="CORE",
                         help="OpenBLAS kernel for the clean room (e.g. Haswell or Sandybridge); see reproduce_lab.py")
+    parser.add_argument("--julia", type=Path, default=os.environ.get("CIW_LAB_JULIA_EXECUTABLE"),
+                        help="Julia 1.10.12 executable provisioned by scripts/provision_julia.py (T145's worker)")
+    parser.add_argument("--julia-depot", type=Path, default=os.environ.get("CIW_LAB_JULIA_DEPOT"),
+                        help="The depot scripts/provision_julia.py instantiated the worker environment in")
     args = parser.parse_args()
+    if (args.julia is None) != (args.julia_depot is None):
+        raise SystemExit("Bind Julia with both --julia and --julia-depot (scripts/provision_julia.py prints them)")
     if args.temporary_root:
         args.temporary_root = args.temporary_root.resolve()
     if not args.no_compare and sys.version_info < (3, 12):
@@ -164,6 +176,10 @@ def main() -> int:
         record = proved_heat_record()
         if record is not None:
             command += ["--provider", f"proved-heat-record={record}"]
+        if args.julia is not None:
+            # T145 runs its Julia worker with this executable and depot (provisioned, never resolved, here).
+            command += ["--provider", f"julia={Path(os.path.abspath(args.julia))}",
+                        "--provider", f"julia-depot={Path(os.path.abspath(args.julia_depot))}"]
         if sys.version_info >= (3, 12):
             # PLSR and FTR require Python 3.12; the clean-room interpreter hosts both.
             command += ["--extras", "dev,lab,mcp,plsr", "--provider", "plsr-python=@venv", "--provider", "ftr-python=@venv"]

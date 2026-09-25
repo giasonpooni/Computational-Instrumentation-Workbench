@@ -156,9 +156,10 @@ value. Wall-clock and CPU times are retained only as artifacts
   and binary digests are in the report's runtime identity (and the GPU's
   name, UUID and driver when it ran). No Julia port exists, so T117 stays
   `partial` on every host; deferred research question: a Julia port behind
-  the SCR worker T145 plans. With a bound rapl-log capture that holds the
-  Rust bracket (built by the same rustc, so the binary digests match), T117
-  reports the Rust port's and the NumPy reference's package energy per batch.
+  the SCR worker T145 runs ([IMPLEMENTATION_TARGETS](IMPLEMENTATION_TARGETS.md#julia)),
+  which today serves only the damped oscillator. With a bound rapl-log
+  capture that holds the Rust bracket (built by the same rustc, so the binary
+  digests match), T117 reports the Rust port's and the NumPy reference's package energy per batch.
 - **T119 energy per accepted result.** Definition:
   `E_acc = (counter(last measurement read) − counter(first measurement read)) / #accepted replica solves`,
   where a replica solve is accepted when its retained batch output has KL ≤

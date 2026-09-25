@@ -3,9 +3,10 @@
 Runs ``scripts/check_lab.py --no-compare`` (isolated wheel, pinned providers,
 lab tests, whole queue) under Python 3.12+, or takes such a run with
 ``--from-run`` (it must have run under Python 3.12+ with CSG, FTR, SCR, the
-exchange SET, PPDA and SCR checkouts, the telemetry stack and the PLSR/FTR
-interpreter bound, none of them refused and T077's telemetry session run, as
-in the CI comparison),
+exchange SET, PPDA and SCR checkouts, the telemetry stack, the PLSR/FTR
+interpreter and the provisioned Julia runtime and depot bound, none of them
+refused, T077's telemetry session run and T145's Julia worker run through
+SCR, as in the CI comparison),
 then replaces the retained reports, artifacts, queue state, report book and
 dashboard (rendered inside the clean room by the installed wheel) with the
 fresh ones.
@@ -40,10 +41,10 @@ PRESERVED = ("hardware", "proved-heat", "README.md")
 assert not set(RETAINED) & set(PRESERVED)
 # The bindings scripts/check_lab.py makes on Python 3.12+; CI compares with a run that had all of them.
 REQUIRED_PROVIDERS = ("csg", "ftr", "scr", "set", "ppda", "scr-exchange", "plsr-python", "ftr-python",
-                      "telemetry-stack")
-# Refusal codes of those providers (CSG_TREE_MISMATCH, FTR_INTERPRETER_UNBOUND, PLSR_UNAVAILABLE, ...): a
-# report carrying one did not run its bound provider, whatever the binding was named.
-PROVIDER_REFUSAL = re.compile(r"\b(?:CSG|FTR|PLSR)_[A-Z]+(?:_[A-Z]+)*\b")
+                      "telemetry-stack", "julia", "julia-depot")
+# Refusal codes of those providers (CSG_TREE_MISMATCH, FTR_INTERPRETER_UNBOUND, PLSR_UNAVAILABLE,
+# JULIA_ENVIRONMENT_REFUSED, ...): a report carrying one did not run its bound provider, whatever the binding was named.
+PROVIDER_REFUSAL = re.compile(r"\b(?:CSG|FTR|PLSR|JULIA)_[A-Z]+(?:_[A-Z]+)*\b")
 
 
 def pinned_toolchain_probed(run: Path) -> bool:
@@ -71,11 +72,26 @@ def telemetry_session_ran(run: Path) -> bool:
     return bool(states) and all(state == "ready" for state in states) and bool(identity.get("executed_runtimes"))
 
 
+def julia_worker_ran(run: Path) -> bool:
+    """Whether T145's report in ``run`` ran its Julia worker through SCR's dispatcher: the bound runtime passed the
+    handshake and the bound SCR checkout hosted the dispatch (a direct run lacks the SCR boundary CI exercises)."""
+    try:
+        identity = json.loads((run / "reports" / "T145.json").read_text(encoding="utf-8"))["provider_runtime_identity"]
+        julia = identity["julia"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    return isinstance(julia, dict) and julia.get("accepted") is True and julia.get("path") == "scr"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stack-root", type=Path, default=os.environ.get("CIW_LAB_STACK_ROOT"))
     parser.add_argument("--temporary-root", type=Path)
     parser.add_argument("--from-run", type=Path, help="Use an existing clean-room output instead of running one")
+    parser.add_argument("--julia", type=Path, default=os.environ.get("CIW_LAB_JULIA_EXECUTABLE"),
+                        help="Julia runtime from scripts/provision_julia.py, passed to check_lab.py")
+    parser.add_argument("--julia-depot", type=Path, default=os.environ.get("CIW_LAB_JULIA_DEPOT"),
+                        help="Its depot, passed to check_lab.py")
     args = parser.parse_args()
     if args.temporary_root:
         args.temporary_root = args.temporary_root.resolve()
@@ -91,6 +107,8 @@ def main() -> int:
                 command += ["--stack-root", str(args.stack_root)]
             if args.temporary_root:
                 command += ["--temporary-root", str(args.temporary_root)]
+            if args.julia and args.julia_depot:
+                command += ["--julia", str(args.julia), "--julia-depot", str(args.julia_depot)]
             subprocess.run(command, check=True)
         gate = run / "gate.json"
         record = json.loads(gate.read_text(encoding="utf-8")) if gate.is_file() else {}
@@ -126,6 +144,10 @@ def main() -> int:
                              "tool:cargo+<toolchain> probe), so it could not rebuild the gate's engine as CI's lab "
                              "gate does; install it (rustup toolchain install <toolchain> --profile minimal, as "
                              ".github/workflows/lab.yml does) and retain a new run")
+        if not julia_worker_ran(run):
+            raise SystemExit("T145 did not run its Julia worker through SCR's dispatcher on the bound julia and "
+                             "julia-depot (its report says why); provision them with scripts/provision_julia.py, as "
+                             ".github/workflows/lab.yml does, and retain a new run")
         target = ROOT / "lab"
         target.mkdir(exist_ok=True)
         for name in RETAINED:

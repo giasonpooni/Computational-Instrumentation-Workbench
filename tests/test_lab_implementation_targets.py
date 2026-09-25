@@ -1,8 +1,12 @@
 import dataclasses
+import hashlib
 import importlib.util
 import json
 import math
+import os
+import re
 import shutil
+import subprocess
 
 import numpy as np
 import pytest
@@ -15,7 +19,9 @@ from ciw.lab import implementation_targets_architecture as arch
 from ciw.lab import implementation_targets_authority as authority
 from ciw.lab import implementation_targets_fpga as fpga
 from ciw.lab import implementation_targets_kernels as kernels
+from ciw.lab import implementation_targets_julia as julia_study
 from ciw.lab import implementation_targets_serial as serial
+from ciw.lab import julia_worker
 from ciw.lab.evidence import COMPUTATIONAL_DOMAINS, finding
 from ciw.lab.registry import load_queue, section_implementations
 from ciw.lab.report import validate_report
@@ -207,16 +213,309 @@ def test_t144_architecture_scan(tmp_path):
 def test_t145_julia_partial_with_plan(tmp_path):
     report, findings = _run("T145", tmp_path)
     _assert_clean(report, "partial", "analytic")
-    assert findings["Julia environment pinned and exercised through the CIW to SCR boundary"]["evidence_status"] == \
-        "not_established"
+    scr_claim = findings["Julia environment pinned and exercised through the CIW to SCR boundary"]
+    assert scr_claim["evidence_status"] == "not_established" and scr_claim["expected_not_established"] is True
+    # Without the julia and julia-depot bindings the worker exists but does not run, and the report says why.
+    assert "no julia and julia-depot binding" in scr_claim["basis"]["notes"]
     assert findings["Julia provider pin procedure"]["evidence_status"] == "analytic"
-    # No Julia execution path exists, so the next task is to build one, not merely to provision Julia.
-    assert report["recommended_next_task"].startswith("Implement the Julia worker behind the SCR boundary")
+    assert findings["Julia provider pin procedure"]["value"] == list(julia_worker.HANDSHAKE_FIELDS)
+    assert report["recommended_next_task"] == targets.NEXT_STEPS["T145-unbound"]
+    assert report["provider_runtime_identity"]["requirement_probes"]["provider:julia"] is False
     plan = json.loads((tmp_path / "artifacts" / "T145" / "julia-pin-procedure.json").read_text(encoding="utf-8"))
     assert "manifest_sha256" in plan["identity_fields"] and plan["steps"]
     symbolic = findings.get("Symbolic torus Christoffel symbols and curvature agree with ciw.lab.surfaces.Torus")
     if importlib.util.find_spec("sympy") is not None:
         assert symbolic["evidence_status"] == "independently_verified" and symbolic["value"] <= 1e-12
+
+
+def _julia_bindings():
+    """The julia and julia-depot bindings the clean-room gate passes (plus SCR when bound), or a skip."""
+    executable, depot = os.environ.get("CIW_LAB_JULIA_EXECUTABLE"), os.environ.get("CIW_LAB_JULIA_DEPOT")
+    if not executable or not depot:
+        pytest.skip("set CIW_LAB_JULIA_EXECUTABLE and CIW_LAB_JULIA_DEPOT to a runtime provisioned by "
+                    "scripts/provision_julia.py")
+    bound = {"julia": executable, "julia-depot": depot}
+    if os.environ.get("CIW_LAB_SCR_REPO"):
+        bound["scr"] = os.environ["CIW_LAB_SCR_REPO"]
+    return bound
+
+
+@pytest.mark.lab_task("T145")
+def test_t145_julia_worker_acceptance_set(tmp_path):
+    """The real worker: numerical fixtures against the closed form, replay, refusals, failures, offline restore."""
+    bound = _julia_bindings()
+    implementations = section_implementations("implementation-targets")
+    report = runner.run_task(TASKS["T145"], implementations["T145"], runner.Context(tmp_path, bound), {})
+    validate_report(report)
+    findings = {f["claim"]: f for f in report["findings"]}
+    _assert_clean(report, "partial", "numerically_verified")
+    assert report["recommended_next_task"] == targets.NEXT_STEPS["T145"]
+    claims = julia_study.CLAIMS
+    independent = [claims["default"], claims["mixed"], claims["phase"]]
+    for claim in independent:
+        check = findings[claim]["basis"]["independent_check"]
+        assert findings[claim]["evidence_status"] == "independently_verified"
+        assert check["producer"]["implementation"].startswith("OrdinaryDiffEq.jl")
+        assert "OrdinaryDiffEqTsit5 2.1.4" in check["producer"]["revision"] and "Julia 1.10.12" in check["producer"][
+            "revision"]
+        assert check["checker"]["revision"].startswith("ciw ") and len(check["checker"]["source_sha256"]) == 64
+    assert findings[claims["default"]]["value"]["samples"] == 768
+    assert findings[claims["default"]]["value"]["max_threshold_ratio"] < 1e-2
+    expected = "numerically_verified" if "scr" in bound else "not_established"
+    assert findings[claims["scr"]]["evidence_status"] == expected
+    assert findings[claims["platform"]]["evidence_status"] == "not_established"
+    assert findings[claims["platform"]]["expected_not_established"] is True
+    for key in ("pin", "grid", "drift", "ladder", "bound", "replay", "bytes", "host_refusals", "worker_refusals",
+                "channel", "mock", "replayed_handshake"):
+        assert findings[claims[key]]["evidence_status"] == "numerically_verified", key
+    # Claims that name SCR are made only where SCR ran; the direct path words them without SCR.
+    for key in ("halt", "offline"):
+        made, absent = (key, f"{key}_direct") if "scr" in bound else (f"{key}_direct", key)
+        assert findings[claims[made]]["evidence_status"] == "numerically_verified", key
+        assert claims[absent] not in findings
+    if "scr" in bound:
+        assert findings[claims["offline"]]["value"]["scr_compared"] >= 1
+    manifest = julia_worker.manifest_packages(julia_worker.WORKER_DIR / "Manifest.toml")["packages"]
+    assert findings[claims["pin"]]["value"]["package_trees_verified"] == len(manifest)
+    # The tolerance is not a global error bound (a retained counterexample), and repeated occurrences agree.
+    assert findings[claims["bound"]]["counterexample"]["witness"]["error_to_tolerance_ratio"] > 1
+    assert findings[claims["replay"]]["value"] == {"occurrences": 4, "sessions": 2, "max_abs_difference": 0.0}
+    identity = report["provider_runtime_identity"]["julia"]
+    assert identity["accepted"] and identity["handshake"]["julia_version"] == "1.10.12"
+    assert identity["handshake"]["depot"] == "<bound julia-depot>" and identity["path"] == (
+        "scr" if "scr" in bound else "direct")
+    # Offline: the retained frames decode without Julia; no report or artifact name quotes the bound paths.
+    frames = julia_study.restore_frames(json.loads(
+        (tmp_path / "artifacts" / "T145" / "julia-frames.json").read_text(encoding="utf-8")))
+    output = julia_worker.decode_output(bytes.fromhex(frames["A1"]["response_frame"])[julia_worker.HEADER.size:])
+    assert output["count"] == 768 and output["retcode"] == "Success"
+    assert frames["crash"]["response_frame"] is None and frames["oversized-frame"]["outcome"] == "frame_too_large"
+    text = json.dumps(report) + (tmp_path / "artifacts" / "T145" / "julia-exchanges.json").read_text(encoding="utf-8")
+    assert bound["julia-depot"] not in text and bound["julia"] not in text
+
+
+def _mock(mode, **options):
+    """A protocol-mock session replaying a synthetic handshake (no Julia; channel failures only)."""
+    handshake = b"ciw.julia.worker-handshake.v1\nprotocol ciw.julia.worker-protocol.v1\n"
+    return julia_worker.mock_session(mode, handshake, **options)
+
+
+@pytest.mark.lab_task("T145")
+def test_julia_host_refuses_invalid_requests_before_dispatch():
+    for reference, expected, observed in julia_study.host_refusals():
+        assert observed == expected, reference
+    cases = julia_study.fixtures()
+    default = cases["ciw-default"]
+    payload = julia_study._input(default)
+    assert len(payload) == 2 + len(julia_worker.INPUT_SCHEMA) + 6 * 8 + 4 + 768 * 8
+    assert payload == julia_study._raw_input(default)          # host validation adds nothing to valid bytes
+    assert len(julia_study._configuration()) == 2 + len(julia_worker.CONFIGURATION_SCHEMA) + 4 * 8 + 8 + 10 * 8
+    # A request the host refuses to frame uses no occurrence: the session's counter is unchanged.
+    session = _mock("silent", request_timeout=5.0)
+    session.start()
+    try:
+        with pytest.raises(julia_worker.RequestRefusal, match="frame_too_large"):
+            session.request(julia_worker.OPERATION_DESCRIPTOR, b"", bytes(70000))
+        assert session.occurrences == 0 and session.ended is None
+    finally:
+        session.process.kill()
+        session.process.wait()
+
+
+@pytest.mark.lab_task("T145")
+def test_julia_session_failures_end_the_session_without_a_result():
+    program, configuration = julia_worker.OPERATION_DESCRIPTOR, julia_study._configuration()
+    input_payload = julia_study._input(julia_study.fixtures()["ciw-default"])
+    expected = dict(julia_study.MOCK_FAILURES, silent="response_timeout")
+    for mode, code in expected.items():
+        session = _mock(mode, request_timeout=0.5 if mode == "silent" else 30.0)
+        session.start()
+        with pytest.raises(julia_worker.WorkerFailure) as failure:
+            session.request(program, configuration, input_payload)
+        assert failure.value.code == code, mode
+        assert failure.value.occurrence == 1 and failure.value.request_frame is not None
+        if mode == "exit_after_handshake":   # a worker that closed its output is reaped with its own exit code
+            assert failure.value.detail.endswith("worker exit code 3")
+        # The session is over and its process reaped; a later request is refused, never retried.
+        assert session.ended == code and session.process.poll() is not None
+        with pytest.raises(julia_worker.WorkerFailure, match="session_ended"):
+            session.request(program, configuration, input_payload)
+    # A handshake that does not match is refused before any request, and the process is reaped.
+    refusing = julia_worker.mock_session("silent", b"ciw.julia.worker-handshake.v1\nthreads 2\n",
+                                         accept=lambda handshake: {"accepted": handshake.get("threads") == "1",
+                                                                   "mismatches": ["threads"]})
+    with pytest.raises(julia_worker.WorkerFailure, match="environment_mismatch"):
+        refusing.start()
+    assert refusing.process.poll() is not None and refusing.occurrences == 0
+    broken = julia_worker.mock_session("silent", b"not a handshake")
+    with pytest.raises(julia_worker.WorkerFailure, match="malformed_handshake"):
+        broken.start()
+    # A crash kills a worker that holds half a request: it can never answer, however the host is scheduled.
+    crashing = _mock("silent", request_timeout=30.0)
+    crashing.start()
+    with pytest.raises(julia_worker.WorkerFailure) as failure:
+        crashing.request(program, configuration, input_payload, fault="crash")
+    assert failure.value.code == "worker_exited" and "worker exit code" in failure.value.detail
+    full = julia_worker.HEADER.size + len(julia_worker.encode_request(program, configuration, input_payload))
+    assert len(failure.value.request_frame) < full and crashing.process.poll() is not None
+
+
+@pytest.mark.lab_task("T145")
+def test_julia_package_and_runtime_trees(tmp_path):
+    """The host's own reading of bound files: Pkg's git tree hash of package sources and the runtime tree digest."""
+    package = tmp_path / "package"
+    files = (("src/P.jl", b"module P\nend\n"), ("ext/PExt.jl", b"x"), ("Project.toml", b'name = "P"\n'))
+    for relative, content in files:
+        (package / relative).parent.mkdir(parents=True, exist_ok=True)
+        (package / relative).write_bytes(content)
+    (package / "empty" / "nested").mkdir(parents=True)
+    tree = "6c2d8ddb7d5512769da0a9af28fd38d8486062df"   # git write-tree of these files (git skips empty directories)
+    assert julia_worker.git_tree_sha1(package) == tree
+    # Installed under the slug Julia loads it from, the package passes; changed bytes or a missing directory do not.
+    depot, package_uuid = tmp_path / "depot", "b1df2697-797e-41e3-8120-5422d3b24e4a"
+    installed = depot / "packages" / "P" / julia_worker.version_slug(package_uuid, tree)
+    shutil.copytree(package, installed)
+    for path in installed.rglob("*"):
+        os.utime(path, ns=(10**18, 10**18))   # provisioned long before the change below
+    manifest = {"P": {"uuid": package_uuid, "version": "1.0.0", "tree": tree, "extensions": []}}
+    assert julia_worker.package_source_problems(depot, manifest) == []
+    (installed / "src" / "P.jl").write_bytes(b"module Q\nend\n")   # same size, other bytes
+    assert julia_worker.package_source_problems(depot, manifest) == ["source:P"]
+    shutil.rmtree(installed)
+    assert julia_worker.package_source_problems(depot, manifest) == ["source:P"]
+    if os.name == "posix" and shutil.which("git"):
+        # Executable files and symbolic links carry git's modes 100755 and 120000, as git itself records them.
+        (package / "run.sh").write_bytes(b"#!/bin/sh\n")
+        (package / "run.sh").chmod(0o755)
+        (package / "link.jl").symlink_to("src/P.jl")
+        git = ["git", f"--git-dir={tmp_path / 'git'}", f"--work-tree={package}"]
+        subprocess.run(git + ["init", "-q"], check=True)
+        subprocess.run(git + ["add", "-A"], check=True)
+        written = subprocess.run(git + ["write-tree"], check=True, capture_output=True, text=True).stdout.strip()
+        assert julia_worker.git_tree_sha1(package) == written
+    # The runtime tree digest lists every file by content (directories are not entries).
+    runtime = tmp_path / "runtime"
+    (runtime / "bin").mkdir(parents=True)
+    (runtime / "lib" / "julia").mkdir(parents=True)
+    launcher = runtime / "bin" / "julia"
+    launcher.write_bytes(b"launcher")
+    listing = f"file {hashlib.sha256(b'launcher').hexdigest()} bin/julia\n"
+    assert julia_worker.runtime_tree_sha256(runtime) == hashlib.sha256(listing.encode()).hexdigest()
+    (runtime / "lib" / "julia" / "extra.so").write_bytes(b"")
+    assert julia_worker.runtime_tree_sha256(runtime) != hashlib.sha256(listing.encode()).hexdigest()
+    # A byte-different runtime is refused although it declares exactly the pinned identity: the host reads the bound
+    # executable and runtime tree itself and compares the declared executable digest with the pin, not the file.
+    archive = julia_worker.RUNTIME_PIN["archives"]["linux-x86_64"]
+    bound = julia_worker.JuliaRuntime(launcher, depot)
+    handshake = dict.fromkeys(julia_worker.HANDSHAKE_FIELDS, "")
+    handshake.update(julia_worker.expected_identity(bound, 1, archive), machine=archive["machine"],
+                     sysimage=archive["sysimage"])
+    comparison = julia_worker.compare_handshake(handshake, bound)
+    assert not comparison["accepted"] and "executable_sha256" not in comparison["mismatches"]
+    assert {"executable_file", "runtime_tree", "sysimage", "package_sources"} <= set(comparison["mismatches"])
+    handshake.update(executable_sha256=julia_worker.sha256_file(launcher), julia_commit="0" * 40)
+    mismatches = julia_worker.compare_handshake(handshake, bound)["mismatches"]
+    assert {"executable_sha256", "julia_commit"} <= set(mismatches)
+
+
+def _halting_run(runtime, steps, scr_root=None):
+    """A stand-in for implementation_targets_julia.run: every session accepted, every request halted (no output)."""
+    fields = dict.fromkeys(julia_worker.HANDSHAKE_FIELDS, "x")
+    fields.update(julia_version="1.10.12", julia_commit="0" * 40, machine="x86_64-linux-gnu",
+                  packages="OrdinaryDiffEqTsit5=b1df2697-797e-41e3-8120-5422d3b24e4a=2.1.4=OrdinaryDiffEqTsit5/74X3C/"
+                           "src/OrdinaryDiffEqTsit5.jl")
+    handshake = "".join([julia_worker.HANDSHAKE_SCHEMA + "\n"] + [f"{key} {value}\n" for key, value in fields.items()])
+    comparison = {"accepted": True, "mismatches": [], "compared": [], "package_problems": [], "source_problems": [],
+                  "packages_verified": 1, "package_trees_verified": 0, "sysimage_sha256": None}
+    halt = b"ciw.julia.worker-halt.v1\nretcode MaxIters\nnaccept 10\nnreject 0\nnf 61\nsaved 1\n"
+    records, occurrence = [], 0
+    for step in steps:
+        record = {"label": step["label"], "op": step["op"], "session": step["session"], "session_id": step["session"],
+                  "session_ended": None}
+        if step["op"] == "start":
+            record.update(outcome="accepted", startup_s=0.0, handshake=handshake.encode().hex(), comparison=comparison)
+        else:
+            occurrence += 1
+            request = julia_worker.encode_request(*(bytes.fromhex(step[name])
+                                                    for name in ("program", "configuration", "input")))
+            record.update(fixture=step["fixture"], fault=step.get("fault"), outcome="halted", occurrence=occurrence,
+                          request_id=occurrence, request_frame=julia_worker.frame("request", occurrence, request).hex(),
+                          response_frame=julia_worker.frame("halted", occurrence, halt).hex(), elapsed_s=0.0)
+        records.append(record)
+    sessions = {step["session"]: {"session_id": step["session"], "occurrences": 0, "ended": "closed",
+                                  "stderr_bytes": 0, "exit_code": 0} for step in steps}
+    return {"records": records, "sessions": sessions, "path": "direct"}
+
+
+@pytest.mark.lab_task("T145")
+def test_t145_reports_a_fixture_that_did_not_complete(tmp_path, monkeypatch):
+    """A bound worker whose requests all halt: T145 reports refuted findings instead of failing on a missing result."""
+    monkeypatch.setattr(julia_study, "run", _halting_run)
+    for role in ("julia", "julia-depot"):
+        (tmp_path / role).touch()
+    bound = {role: tmp_path / role for role in ("julia", "julia-depot")}
+    implementations = section_implementations("implementation-targets")
+    report = runner.run_task(TASKS["T145"], implementations["T145"], runner.Context(tmp_path / "run", bound), {})
+    validate_report(report)
+    findings = {f["claim"]: f for f in report["findings"]}
+    assert report["state"] == "partial"
+    default = findings[julia_study.CLAIMS["default"]]
+    assert default["evidence_status"] == "not_established" and not default.get("expected_not_established")
+    assert default["basis"]["checks"][0]["observed_refusal"] == "halted"
+    assert "default fixture did not complete (halted)" in report["numerical_result"]
+    assert "the tolerance ladder did not complete" in report["numerical_result"]
+    assert findings[julia_study.CLAIMS["halt_direct"]]["evidence_status"] == "numerically_verified"
+    assert findings[julia_study.CLAIMS["offline_direct"]]["evidence_status"] == "not_established"
+
+
+@pytest.mark.lab_task("T145")
+def test_julia_encodings_and_scr_commitments():
+    import struct
+    from ciw.adapters.oscillator import closed_form, make_demo_run
+    # SCR's canonical commitment, restated in CIW, reproduces SCR's own pinned vectors.
+    assert julia_study.scr_commit("program", [b"hello"]) == \
+        "9ebc0016a12b82a8588c1e021d46b5cf3f43f330ebc71ead63a6e36fab8f4535"
+    assert julia_study.scr_commit("input", [b"hello"]) == \
+        "df8dafd17d787e3f0ae9b123547bc46e2188c6259fabcf0b0f3c5ac9c24dc4a7"
+    assert julia_study.scr_commit("output", [b""]) == "86a35cb4e4a48a18646c34a9986f3fcf85eb3bbaa3089809904844c12d38cff1"
+    # Julia's package slug (CRC-32C of uuid and git tree) for a package the committed Manifest pins.
+    assert julia_worker.crc32c(b"123456789") == 0xE3069283
+    manifest = julia_worker.manifest_packages(julia_worker.WORKER_DIR / "Manifest.toml")
+    core = manifest["packages"]["OrdinaryDiffEqCore"]
+    assert (core["version"], julia_worker.version_slug(core["uuid"], core["tree"])) == ("4.18.0", "8VHiN")
+    assert manifest["julia_version"] == julia_worker.RUNTIME_PIN["version"] == "1.10.12"
+    # The host's operation descriptor, controller profile and handshake fields are the worker's, byte for byte.
+    source = (julia_worker.WORKER_DIR / "oscillator_worker.jl").read_text(encoding="utf-8")
+    block = source.split("const DESCRIPTOR = Vector{UInt8}(\n", 1)[1].split(")\n", 1)[0]
+    joined = re.sub(r'"\s*\*\s*\n\s*"', "", block).strip()
+    assert joined.startswith('"') and joined.endswith('"')
+    assert joined[1:-1].replace("\\n", "\n").encode("ascii") == julia_worker.OPERATION_DESCRIPTOR
+    profile = re.search(r"const CONTROLLER = \((.*?)\)\n", source, re.S).group(1)
+    assert [(name, float(value)) for name, value in re.findall(r"(\w+) = ([0-9.e-]+)", profile)] == \
+        [(name, float(value)) for name, value in julia_worker.CONTROLLER]
+    assert re.findall(r'^\s+"(\w+)" => ', source, re.M) == list(julia_worker.HANDSHAKE_FIELDS)
+    # The output encoding decodes strictly: exact length, schema and finite values.
+    times = [0.0, 0.5]
+    raw = (struct.pack("<H", len(julia_worker.OUTPUT_SCHEMA)) + julia_worker.OUTPUT_SCHEMA.encode()
+           + struct.pack("<H", 7) + b"Success" + struct.pack("<QQQI", 3, 1, 25, 2)
+           + struct.pack("<8d", *times, 1.0, 0.9, 0.0, -0.4, 0.5, 0.49))
+    decoded = julia_worker.decode_output(raw)
+    assert decoded["t"] == times and decoded["nreject"] == 1 and decoded["energy"] == [0.5, 0.49]
+    for broken in (raw[:-1], raw + b"\0", raw[:-8] + struct.pack("<d", math.nan)):
+        with pytest.raises(ValueError):
+            julia_worker.decode_output(broken)
+    # The closed form behind the default recording is the one the fixtures compare with.
+    run = make_demo_run()
+    model = run["metadata"]["model"]
+    q, v, energy = closed_form(np.asarray(run["time_s"]), omega_0=model["omega_0_rad_s"], gamma=model["gamma_s_inv"],
+                               mass=model["mass_kg"], q0=model["initial_q_m"], v0=model["initial_v_m_s"])
+    assert q.tolist() == run["channels"]["q"]["values"] and energy.tolist() == run["channels"]["energy"]["values"]
+    # Frames round-trip through the retained, deduplicated artifact form.
+    record = {"op": "request", "outcome": "completed", "occurrence": 1,
+              "request_frame": julia_worker.frame("request", 1, b"abc").hex(),
+              "response_frame": julia_worker.frame("completed", 1, raw, julia_worker.MAX_RESPONSE_PAYLOAD).hex()}
+    restored = julia_study.restore_frames(julia_study.retained_frames({"x": record, "y": dict(record)}))
+    assert restored["x"]["response_frame"] == record["response_frame"] and len(restored) == 2
 
 
 @pytest.mark.lab_task("T145")
@@ -708,7 +1007,7 @@ def test_ciw_producers_of_independent_checks_carry_a_revision(tmp_path):
             for side in ("producer", "checker"):
                 identity = check[side]
                 assert isinstance(identity.get("revision"), str) and identity["revision"], (task_id, side)
-            if check["producer"]["implementation"].startswith("ciw.") and task_id != "T145":
+            if check["producer"]["implementation"].startswith("ciw."):
                 assert check["producer"]["revision"] == f"ciw {__version__}"
                 assert len(check["producer"]["source_sha256"]) == 64
 
