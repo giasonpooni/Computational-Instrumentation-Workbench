@@ -838,12 +838,13 @@ RUST_BRACKET_BOUNDARY = (
 SAME_ORIGIN = ("both kernels are ciw code: ciw.lab.evidence refuses an independent_check declared between them "
                "(regression test test_cross_language_agreement_is_not_independent), so agreement is "
                "cross-implementation evidence, not independent verification")
-NOT_WRITTEN = ("No Julia implementation of the common Gaussian VI workload exists in the repository (T145 plans a Julia "
-               "worker behind the SCR boundary; none exists), so that comparison cannot run on any host, whatever "
-               "the tool:julia probe reports; the GPU comparison runs wherever an NVIDIA GPU answers the probe")
+NOT_WRITTEN = ("No Julia implementation of the common Gaussian VI workload exists in the repository (T145's Julia "
+               "worker behind the SCR boundary allows only its damped-oscillator operation), so that comparison "
+               "cannot run on any host, whatever the tool:julia probe reports; the GPU comparison runs wherever an "
+               "NVIDIA GPU answers the probe")
 JULIA_QUESTION = ("Deferred research question: a Julia port of the common Gaussian VI workload with the kernel's "
-                  "operation order (no fused multiply-add), run through the Julia worker T145 plans behind the SCR "
-                  "boundary and compared bitwise with the NumPy reference")
+                  "operation order (no fused multiply-add), added to the operation allowlist of T145's Julia worker "
+                  "behind the SCR boundary and compared bitwise with the NumPy reference")
 
 
 GPU_REJECTED = "GPU outputs rejected by the CUDA worker's own output validation (1 = yes)"
