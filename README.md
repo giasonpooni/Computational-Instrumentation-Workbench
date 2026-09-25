@@ -41,7 +41,7 @@ CIW is the coordinating instrument around that loop:
 - It records refusals and runtime failures without manufacturing a successful
   result.
 
-The workbench currently registers twenty-five workflow kinds in the shared
+The workbench currently registers twenty-six workflow kinds in the shared
 session. The exact operation status, commands, pins, limits and validation
 evidence live in [INSTRUMENTS.md](docs/INSTRUMENTS.md) and
 [INTEGRATION_COVERAGE.md](docs/INTEGRATION_COVERAGE.md).
@@ -55,9 +55,10 @@ evidence live in [INSTRUMENTS.md](docs/INSTRUMENTS.md) and
 | Measurement and estimation | Pinned RCI/FSRT/JSPT, telemetry, calibrated-process and identified-design paths. |
 | Numerical geometry | Native bounded covariance, mesh-path and translation-flow providers, plus pinned flat-torus and curved-surface references. |
 | Stability and proof | PLSR terminal operation and selected SCR/SP1 registered computation with qualified scopes. |
+| Numerical simulation | Pinned Julia 1.10.12 `Tsit5` oscillator provider with retained SCR-shaped specification, analytic-oracle verification, replay and viewport projection. |
 | Workstation physical bench | NVML-backed energy-to-accuracy capture and replay when a supported NVIDIA device is available. |
 | Machine configuration | Evidence-bound read-only asset, signal and model manifest workflow with save/reopen/replay tests. |
-| Visualization | Optional Godot client and read-only geographic projection over retained records. |
+| Visualization | Optional Godot client (including retained Julia trajectories) and read-only geographic projection over retained records. |
 | Provider integration | Exact pins and adapter manifests; upstream repositories remain independent sources of truth. |
 
 These are bounded computational capabilities. They do not imply a live DAQ
@@ -120,7 +121,8 @@ The demo is synthetic and needs no external provider. For the shared
 measurement/design session, follow [WORKBENCH_ASSEMBLY.md](docs/WORKBENCH_ASSEMBLY.md)
 and the [quickstart](docs/quickstart.md). Container and workstation deployment
 notes are in [deploy/README.md](deploy/README.md).
-The command-only oscillator walkthrough is [OSCILLATOR_OPERATOR.md](docs/OSCILLATOR_OPERATOR.md).
+The command-only oscillator walkthrough is [OSCILLATOR_OPERATOR.md](docs/OSCILLATOR_OPERATOR.md);
+the numerical Julia counterpart is [JULIA_OSCILLATOR.md](docs/JULIA_OSCILLATOR.md).
 
 ## Evidence boundaries
 

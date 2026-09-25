@@ -11,7 +11,7 @@ admission of evidence for a downstream purpose.
 | Increment | Scope | Readiness |
 | --- | --- | --- |
 | 1. Existing SCR proof workload | Expose bounded integer heat diffusion, retained input/output and independently checked SCR proof records in one shared investigation | First implementation increment; a successful native SP1 build/prove/verify gate is required before claiming a working cryptographic path |
-| 2. Julia oscillator | Run numerical integration through SCR and compare with CIW's analytical oscillator reference | Planned; no Julia operation or verified Julia environment is supplied by this document |
+| 2. Julia oscillator | Run numerical integration through SCR and compare with CIW's analytical oscillator reference | Implemented as `ciw.julia-oscillator.v1`: pinned Julia 1.10.12 worker, retained SCR execution specification and commitments, analytic oracle verification, fresh replay and viewport projection; see [JULIA_OSCILLATOR.md](JULIA_OSCILLATOR.md). Linux x86-64 exercised; the Windows CI job is the native Windows gate |
 | 3. Exact topology | Compute candidate ordinary Betti numbers over F2 in Julia, then independently recompute them in a registered Rust/SP1 checker | Planned; no topology operation, registered guest or proof is supplied by this document |
 | 4. Measured scaling | Record execution, proving and verification time, peak memory and guest cycles before widening bounds | Required before expanding workloads; no performance capacity is asserted here |
 
@@ -54,9 +54,12 @@ Repeated requests may share a specification identity. They still produce distinc
 execution occurrences and retained result records. Numerical agreement on replay
 is a separate comparison; matching evidence bytes do not erase execution history.
 
-## Planned Julia oscillator operation
+## Julia oscillator operation
 
-The first Julia operation should numerically integrate
+This section is the contract the implemented operation follows; the
+[operator guide](JULIA_OSCILLATOR.md) records the delivered bounds, encodings,
+runtime pin, measured oracle errors and limitations. The first Julia operation
+numerically integrates
 
 ```text
 q' = v
@@ -140,15 +143,17 @@ source digest, project and manifest digests, relevant package/artifact identitie
 thread settings, numerical preferences and any nonstandard system image.
 An environment mismatch requires a new declared runtime, not silent substitution.
 
-A candidate initial Julia version is **1.10.12 LTS**, pending actual installation,
-package resolution and Windows/Linux execution tests. This is a candidate, not
-an installed or accepted pin. At the 2026-09-23 review, Julia's official
+The accepted pin is **Julia 1.10.12 LTS** with `OrdinaryDiffEqTsit5 2.1.4` and
+`SciMLBase 3.56.0`, instantiated and exercised on Linux x86-64; the Windows
+lane runs in CI. The candidate was adopted through the gate described in the
+operator guide. At the 2026-09-23 review, Julia's official
 support table listed 1.13.0 as stable and 1.10.12 as LTS; native Windows x86-64 and
 Linux glibc x86-64 are Tier 1 platforms. A newer candidate may be adopted through
 the same gate. See [Julia platform support](https://julialang.org/downloads/support/).
 
-Commit the real `Project.toml` and machine-generated `Manifest.toml` only after
-instantiating and testing the selected environment. Retain the exact runtime and
+The real `Project.toml` and machine-generated `Manifest.toml` are committed under
+`src/ciw/julia/` after instantiation and testing; `src/ciw/julia-runtime.json`
+pins their digests and package identities. Retain the exact runtime and
 package artifact checksums. A hand-written lockfile or a floating compatibility
 range is not a verified execution environment. Julia's
 [environment documentation](https://pkgdocs.julialang.org/v1/environments/)

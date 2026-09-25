@@ -7,7 +7,7 @@ native execution records and replay evidence. Provider repositories keep their
 scientific responsibilities while their operations and artifacts join this suite.
 
 The [Workbench desktop tab](EXPERIMENT_VIEW.md) is now implemented over that
-substrate: it links twenty-five retained workflows to measurement/state/covariance and
+substrate: it links twenty-six retained workflows to measurement/state/covariance and
 residual panels, native input dependencies, evidence inspection and live session
 invalidation. It introduces no additional estimator or parallel result store.
 
@@ -15,8 +15,10 @@ The [registered SCR/SP1 heat operation](PROVED_HEAT.md) uses the same source,
 execution and result catalogue with a mandatory proof-before-result policy.
 Its additional host/guest startup bindings are explicit; proof bytes and
 historical verification reports do not grant physical or state-admission authority.
-The [Julia and SP1 contract](JULIA_SP1.md) specifies the next simulation and
-exact-topology increments.
+The [Julia oscillator](JULIA_OSCILLATOR.md) adds a pinned numerical simulation
+provider on the same catalogue: SCR-shaped specification and commitments,
+analytic-oracle verification, fresh replay and the existing viewport. The
+[Julia and SP1 contract](JULIA_SP1.md) keeps the exact-topology increment.
 
 The [SRA/SCR assembly](DECLARED_WORKLOADS.md) now adds typed schematic assessment
 and native deterministic integer numerical execution to that same catalog,
@@ -177,7 +179,7 @@ normal server shutdown also saves them. A workflow that refuses before producing
 a bundle returns an error and leaves its source retained, without publishing a
 partial state. The catalog permits at most 64 sources, 128 completed bundles and
 64 MiB of retained content. Existing protocol frame limits still apply. It
-supports twenty-five executable source kinds and source-only geography; it is not an arbitrary bundle
+supports twenty-six executable source kinds and source-only geography; it is not an arbitrary bundle
 importer or a live acquisition service.
 
 ## What shares a workspace
@@ -225,7 +227,7 @@ refuse a connection.
 | SRA | Authored instrument/model schematic, typed relationships and eligibility | Native assessment and selected JSPT/PLSR companion execution share retained upstream graph/result bindings. |
 | JSPT and PLSR | Local sensitivity/covariance propagation and declared-model certificate assessment | JSPT maps an explicitly selected native FSRT covariance. PLSR consumes an explicitly selected retained SIDT model and GSIE prediction with a supplied certificate. |
 | GTE | Geometric reconciliation against declared constraints | Shared circle projection retains raw observations, full native covariance and held candidates; surveyed-frame composition remains pending. |
-| SCR | Delegated scientific computation with declared workload and execution records | Native integer diffusion now executes through the shared session with byte commitments, host-bound engine identity and ICRH oracle. |
+| SCR | Delegated scientific computation with declared workload and execution records | Native integer diffusion now executes through the shared session with byte commitments, host-bound engine identity and ICRH oracle. The Julia oscillator worker reuses the same specification and commitment scheme below this seam. |
 | CSE | BIM/project context, construction intent and domain dispositions | Native quantity conditioning and ledger replay are integrated; surveyed-frame geometry inspection remains a delivery item. |
 | GSV | Read-only spatial and temporal panels consuming selected retained context | CIW geographic sources enter its native provider and WorldStore; explicit CRS84 authority is required. |
 | SET and ICRH | Exchange validation, evaluation and replay/conformance evidence | Reuse existing profiles for scientific paths and test session assembly separately; no additional numerical profile is created merely for a registry. |

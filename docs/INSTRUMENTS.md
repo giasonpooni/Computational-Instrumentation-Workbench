@@ -27,6 +27,7 @@ existing benches.
 | Flat Torus Geodesic Reference | Pinned native area-one lattice and winding trajectory, shared inspection/replay | `ciw serve --flat-torus-repo /trusted/ftr`; [contract](GEODESIC_REFERENCES.md) |
 | Curved Surface Geodesic Sensitivity | Pinned native constant-curvature Jacobi transfer and declared covariance | `ciw serve --curved-surface-repo /trusted/csg`; [contract](GEODESIC_REFERENCES.md) |
 | SCR/SP1 registered heat computation | Bounded integer execution and proof verification; exact Linux runtime required | `ciw serve --computation-repo ... --computation-engine ... --sp1-prover ... --sp1-heat-guest ...`; [full setup and contract](PROVED_HEAT.md) |
+| Julia oscillator numerical integration | Pinned Julia 1.10.12 `Tsit5` worker below the SCR specification seam; analytic oracle verification, fresh replay and viewport projection; simulation only | `ciw serve --julia-executable /path/to/julia`; `ciw julia-oscillator run`, `inspect`, `replay`, `recording`; [contract and guide](JULIA_OSCILLATOR.md) |
 | Variational free-energy sensor fusion | Synthetic curved-surface inference with native CSG/GSIE/PLSR, exact Gaussian reference and retained model failure cases | `ciw serve --free-energy-stack-root /trusted/free-energy`; [mathematics, setup and six cases](VARIATIONAL_FREE_ENERGY.md) |
 | GPU energy to accuracy | Actual NVML/CUDA host capture; built-in retained-log analysis, shared view and replay | `ciw energy probe`, `record`, `replay`; [contract and operating guide](ENERGY_ACCURACY.md) |
 
@@ -365,8 +366,8 @@ State Reconciliation. PPDA, SET and CBSR participate in the scoped executable
 paths above. SCR provides shared integer execution and a separately selected
 [registered SP1 proof operation](PROVED_HEAT.md), as well as exchange inspection.
 GSV provides the read-only declared geographic projection; ESM remains at
-separately requested candidate-evidence retention. Julia and exact F2 topology
-have [planned contracts](JULIA_SP1.md), with no available operation yet.
+separately requested candidate-evidence retention. The [Julia oscillator](JULIA_OSCILLATOR.md) is the first available Julia
+operation; exact F2 topology keeps its [planned contract](JULIA_SP1.md).
 These distinct integration states are recorded in the
 [coverage matrix](INTEGRATION_COVERAGE.md). Their boundaries retain existing
 evidence, operation, execution, result, verification and runtime identities.

@@ -59,6 +59,7 @@ is part of this checkout.
 | [Jacobian-Sensitivity-Propagation-Testbed](https://github.com/giasonpooni/Jacobian-Sensitivity-Propagation-Testbed#readme) | Explicit covariance transport through a declared map. | Pinned covariance path; [COVARIANCE.md](COVARIANCE.md) |
 | [Parameterized-Lyapunov-Stability-Runtime](https://github.com/giasonpooni/Parameterized-Lyapunov-Stability-Runtime#readme) | Supported certificate evaluation. | Pinned standalone operation; [PLSR.md](PLSR.md) |
 | [Scientific-Computation-Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime#readme) | Registered integer execution and optional proof backend. | Contract/selected operation; [PROVED_HEAT.md](PROVED_HEAT.md) |
+| Julia oscillator worker (packaged in CIW) | Pinned `OrdinaryDiffEqTsit5` numerical integration below the SCR specification seam. | Native CIW provider with committed environment; [JULIA_OSCILLATOR.md](JULIA_OSCILLATOR.md) |
 | [Evidence-and-State-Management](https://github.com/giasonpooni/Evidence-and-State-Management#readme) | Candidate evidence review and retention. | Companion boundary; [WORKBENCH_ASSEMBLY.md](WORKBENCH_ASSEMBLY.md) |
 | [Geospatial-State-Visualization](https://github.com/giasonpooni/Geospatial-State-Visualization#readme) | Read-only geographic and temporal projection. | Pinned projection; [INTEGRATED_MODULES.md](INTEGRATED_MODULES.md) |
 | [Schematics-Retrieval-Agent](https://github.com/giasonpooni/Schematics-Retrieval-Agent#readme) | Evidence-backed asset and signal-binding proposals. | Contract/manifest direction; [CONTRACT_FOUNDATIONS.md](CONTRACT_FOUNDATIONS.md) |
@@ -72,8 +73,8 @@ is part of this checkout.
 | [Instrument-Conformance-and-Replay-Harness](https://github.com/giasonpooni/Instrument-Conformance-and-Replay-Harness#readme) | Versioned external profile conformance. | Pinned validator; [EXCHANGE.md](EXCHANGE.md) |
 
 JuliaControl, JuMP, ModelingToolkit, RxInfer, OpenFOAM, FreeCAD, TensorFlow
-Lattice, an FPGA toolchain and a persistent Julia worker remain candidate
-providers. Their contracts can be prepared without claiming that their
+Lattice and an FPGA toolchain remain candidate providers; the persistent Julia
+worker is now the bounded oscillator provider above. Their contracts can be prepared without claiming that their
 environments or hardware are integrated.
 
 ## The collapse rule for loose tooling
@@ -107,8 +108,9 @@ pins include:
 | Curved Surface Geodesic Sensitivity Runtime | bbc535af29c30997e56fd120320c570830676462 |
 | Instrument Conformance and Replay Harness | dc4d826ecd1f28c1d55b724618380ce44e58bedd |
 
-The Julia worker scaffold is deliberately not presented as resolved until its
-environment, lockfile and CI lane are reproducible. Physical calibration,
+The Julia worker's environment, machine-generated manifest and CI lane are
+committed and pinned for the oscillator profile only; wider Julia operations
+are not presented as resolved. Physical calibration,
 FPGA programming, MCP authority, and independent ICRH validation remain
 separate gates.
 

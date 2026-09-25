@@ -19,6 +19,10 @@ The flags select directories; they do not select alternate numerical versions.
 | `scripts/check_telemetry.py` | `src/ciw/telemetry-runtimes.json` | `Provenance-Preserving-Data-Acquisition`, `Streaming-Telemetry-Feature-Extraction`, `Geometric-State-Inference-Engine`, `State-Estimation-Evaluation-Testbed`, `Constraint-Based-State-Reconciliation` |
 | `scripts/check_calibrated_observable.py` | `src/ciw/calibrated-observable-runtimes.json` | `fsrt`, `tbrt`, `mcur`, `oit`, `gsie`, `cbsr`, `fdir`, `set` |
 
+The Julia oscillator gate binds no repository checkout: `scripts/check_julia_oscillator.py --julia <executable>`
+needs Julia 1.10.12 with the packaged `src/ciw/julia` environment instantiated
+into the operator's depot (see [JULIA_OSCILLATOR.md](JULIA_OSCILLATOR.md)).
+
 These layouts use ordinary directories and need no symlinks on Windows. Different
 lanes pin different revisions of some providers; use separate checkout roots.
 Keep the interpreter and dependencies required by each gate installed separately.

@@ -181,6 +181,21 @@ enum and does not claim state-estimator semantics. Read-only source
 and result validation is built into CIW, so reopening needs no GTE runtime.
 See [GTE.md](GTE.md) for exact inputs, statuses, covariance meaning and limits.
 
+## Shared Julia oscillator operation
+
+`ciw.julia-oscillator.v1` uses the same `source.add` (kind `julia-oscillator`,
+schema `ciw.julia-oscillator-source.v1`), `operation.execute` with
+`{source_id}`, `bundle.get`, `bundle.replay` and `experiment.inspect`
+surfaces. Bind the worker with `serve --julia-executable`. The retained bundle
+is `ciw.julia-oscillator-session.v1`; its step retains an SCR execution
+specification with commitments, the exact worker request/response bytes, the
+decoded trajectory and an analytic-oracle verification. `experiment.inspect`
+adds `state_trajectories` holding two `ciw.state-trajectory-projection.v1`
+objects (simulation and reference). `ciw julia-oscillator recording` writes a
+`run.v1` projection with instrument `julia-oscillator-trajectory.v1` that the
+legacy `run.get`, `sample.get` and analysis requests serve unchanged. See
+[JULIA_OSCILLATOR.md](JULIA_OSCILLATOR.md).
+
 ## Shared measurement, geometry and stability operations
 
 The additional shared kinds `measurement-chain`, `geometric-circle` and

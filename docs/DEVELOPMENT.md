@@ -6,8 +6,14 @@ requires a real original proof, fresh proved replay, retained-proof reverificati
 and corrupted-proof rejection from an installed CIW wheel; skipped tests fail it.
 `tests/test_proved_heat.py` separately exercises structural/refusal boundaries
 with explicit test doubles. Such tests never count as cryptographic evidence.
-The [Julia and SP1 contract](JULIA_SP1.md) records the later persistent-worker,
-oscillator, F2 checker and benchmark requirements.
+The [Julia oscillator guide](JULIA_OSCILLATOR.md) gives the pinned environment,
+`scripts/check_julia_oscillator.py` and the real-worker session tests that run
+when `CIW_JULIA_EXECUTABLE` is set; `tests/test_julia_oscillator.py` uses a
+labelled Python double for protocol failures and never counts as numerical
+evidence. After changing the worker, project or manifest, run
+`python scripts/pin_julia_runtime.py` and commit the regenerated pin. The
+[Julia and SP1 contract](JULIA_SP1.md) records the remaining F2 checker and
+benchmark requirements.
 
 Public documentation describes implemented behavior, executable contracts,
 reproducible examples and measured limitations. The [architecture](ARCHITECTURE.md)
@@ -114,6 +120,8 @@ the Windows command shim, so the complete candidate gate currently runs in Ubunt
 CI; the Windows helper failure is a test-tooling limitation.
 
 For viewport changes run `python scripts/check_godot.py --godot <Godot 4.5.2 executable>`
+(add `--julia-recording` and `--julia-view` with retained Julia oscillator files to
+exercise that projection)
 (import, `godot/tests/protocol_smoke.gd`, `channel_generality.gd`, `adapter_boundary.gd`);
 [godot/README.md](../godot/README.md) documents the individual commands. Deployment
 changes use the checks in [deploy/README.md](../deploy/README.md). Record unavailable

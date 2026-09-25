@@ -33,7 +33,7 @@ imports `ciw`, and the command-line entry point is also `ciw`.
 - [Energy-to-accuracy bench](ENERGY_ACCURACY.md)
 - [Variational free-energy sensor fusion](VARIATIONAL_FREE_ENERGY.md)
 - [Geodesic references](GEODESIC_REFERENCES.md) and [geometry research](GEOMETRY_RESEARCH.md)
-- [PLSR](PLSR.md), [registered heat proof](PROVED_HEAT.md), and [Julia/SP1 direction](JULIA_SP1.md)
+- [PLSR](PLSR.md), [registered heat proof](PROVED_HEAT.md), [Julia oscillator provider](JULIA_OSCILLATOR.md) and [Julia/SP1 direction](JULIA_SP1.md)
 - [Exchange inspection](EXCHANGE.md)
 
 ## Development and availability
