@@ -42,6 +42,8 @@ TARGETS = {
                          ["tests/test_machine_source_checks.py", "tests/test_machine_workflow.py"]),
     "project_workflow": ("src/ciw/project_workflow.py",
                          ["tests/test_project_source_checks.py", "tests/test_project_workflow.py"]),
+    "free_energy_math": ("src/ciw/free_energy_math.py",
+                         ["tests/test_free_energy_math_checks.py", "tests/test_free_energy_math.py"]),
     "covariance": ("src/ciw/core/covariance.py",
                    ["tests/test_covariance_artifact_checks.py", "tests/test_covariance_records.py"]),
     "session": ("src/ciw/session.py",
@@ -67,6 +69,20 @@ EQUIVALENT = {
     "consistency_math": {
         # NaN and infinities also fail the unit-interval comparison beside this clause.
         "not math.isfinite(x)",
+    },
+    "free_energy_math": {
+        # Every array leaf has already passed the finite scalar check.
+        "not np.all(np.isfinite(result))",
+        # Guards on matrices and results computed from admitted (finite, bounded, well conditioned)
+        # inputs: no admitted input reaches them, so no input-level test can distinguish them.
+        "not np.all(np.isfinite(matrix))",
+        "np.max(np.abs(matrix - matrix.T)) > 128 * np.finfo(float).eps * max(1.0, float(np.linalg.norm(matrix)))",
+        "not np.all(np.isfinite(eigenvalues))",
+        "not all(math.isfinite(number) for number in [value, *terms.values()])",
+        "np.any(eigenvalues <= 0)",
+        "not math.isfinite(result)",
+        "result < 0",
+        "not np.all(np.isfinite(proposed_mean))",
     },
     "covariance": {
         # Any identity that is not the recomputed content identity already fails the equality clause.
@@ -134,6 +150,15 @@ def run_target(name: str, jobs: int, base: Path) -> tuple[int, list[tuple[str, s
             shutil.copy(ROOT / item, tree / item)
         trees.append(tree)
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    # A failing guarding test would "kill" every mutant; the unmutated module must pass first.
+    baseline = subprocess.run([sys.executable, "-m", "pytest", "-q", "--no-header", "-p", "no:cacheprovider", "-x", *tests],
+                              cwd=trees[0], capture_output=True, text=True, timeout=1800, env=env)
+    if baseline.returncode != 0:
+        for tree in trees:
+            subprocess.run(["git", "worktree", "remove", "--force", str(tree)], cwd=ROOT, check=False)
+        summary = baseline.stdout.strip().splitlines()[-1] if baseline.stdout.strip() else baseline.stderr.strip()[-200:]
+        print(f"{name}: guarding tests fail before any mutation ({summary}); nothing measured", flush=True)
+        return 0, [("baseline", "guarding tests fail unmutated")], []
 
     def run_bucket(bucket: list[tuple[Path, tuple[str, str, str]]]) -> list[tuple[str, str, str]]:
         results = []

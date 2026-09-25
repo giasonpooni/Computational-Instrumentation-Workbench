@@ -192,8 +192,9 @@ check has lost its test.
 `python scripts/check_validator_mutants.py` extends the same discipline to
 the source and result validators of the provider-free references
 (`energy_records`, `thermal_contract`, `uncertainty_validation`,
-`consistency_math`, `machine_workflow`, `project_workflow`), to the shared
-covariance artifact validator (`covariance`) and to the session's request,
+`consistency_math`, `machine_workflow`, `project_workflow`,
+`free_energy_math`), to the shared covariance artifact validator
+(`covariance`) and to the session's request,
 payload and saved-workspace checks (`session`). It derives the
 mutants from the code rather than from a hand-written list: every
 `if <condition>: raise` becomes `if False: raise`, one `or` clause at a time,
