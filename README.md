@@ -1,9 +1,11 @@
-# Computational Instrumentation Workbench
+# Engineering Design Workbench
 
-The public repository is **Notation-Systems-Workbench**. The technical name is
-**Computational Instrumentation Workbench (CIW)**; its distribution package is
-`computational-instrumentation-workbench`, and its Python import and CLI command
-are `ciw`.
+**State. Variation. Invariance.**
+
+The **Engineering Design Workbench (EDW)** is a terminal-first laboratory for
+computational engineering design. It brings measurements, models, numerical
+operations, uncertainty and evidence into one workspace so engineers can
+explore design choices, inspect results and test what must remain true.
 
 Part of **Notation Systems' computational instrumentation and evidence
 infrastructure** for industrial and cyber-physical systems.
@@ -11,16 +13,52 @@ infrastructure** for industrial and cyber-physical systems.
 [Documentation index](docs/README.md) · [Workbench overview](docs/WORKBENCH_OVERVIEW.md) ·
 [Systems catalog](docs/SYSTEMS_CATALOG.md) · [Stack map](docs/STACK.md)
 
-The **Computational Instrumentation Workbench (CIW)** is a terminal-first,
-model-based engineering instrument. It gives engineers and mathematicians one
-place to compose measurements, models, experiments, numerical operations,
-visualizations and evidence. Physics, chemistry and engineering are supported
-domains inside the workspace; specialist repositories remain responsible for
-their own equations and solvers.
+## The design language
+
+Start with three questions:
+
+| Primitive | Engineering question |
+| --- | --- |
+| **State** | What system or candidate design are we describing? |
+| **Variation** | What can change, and through which allowed transformations? |
+| **Invariance** | What must remain true through those transformations? |
+
+The aim is a shared working language across engineering domains, not a separate
+conceptual framework for every instrument. Units, geometry, clocks, uncertainty,
+constraints and numerical methods stay explicit wherever the problem needs
+them. Specialist repositories retain authority over their equations and solvers.
+
+```text
+Design question + objectives
+          |
+          v
+Declare state, allowed variation and required invariants
+          |
+          v
+Run a registered model or measurement operation
+          |
+          v
+Inspect outputs, uncertainty, constraints and checks
+          |
+          v
+Compare candidates -> retain evidence -> refine the design
+```
 
 The operator defines the question, assumptions, objectives, constraints and
-standard of evidence. AI assistance is optional. The terminal, scripts and
-optional graphical client remain useful without an LLM.
+standard of evidence. AI assistance is optional; generated candidates are not
+verified results. The terminal, scripts and optional graphical client remain
+useful without an LLM.
+
+### Existing runtime, broader design purpose
+
+EDW extends the existing **Computational Instrumentation Workbench (CIW)**.
+The distribution remains `computational-instrumentation-workbench`; the Python
+import and CLI command remain `ciw`. References to CIW in source and technical
+documentation identify that existing runtime and its contracts.
+
+This design-oriented framing does not rename schemas, migrate saved records or
+replace numerical engines. New design workloads, representations and checkers
+must plug into the existing substrate rather than create a parallel one.
 
 ## What the workbench does
 
@@ -28,7 +66,7 @@ optional graphical client remain useful without an LLM.
        -> estimate -> evaluate constraints -> diagnose -> advise
                          \-> retain, inspect, replay
 
-CIW is the coordinating instrument around that loop:
+The existing CIW runtime coordinates that loop:
 
 - It captures typed inputs and declared selections.
 - It invokes explicitly registered operations and pinned providers.
@@ -41,9 +79,8 @@ CIW is the coordinating instrument around that loop:
 - It records refusals and runtime failures without manufacturing a successful
   result.
 
-The workbench currently registers twenty-six workflow kinds in the shared
-session. The exact operation status, commands, pins, limits and validation
-evidence live in [INSTRUMENTS.md](docs/INSTRUMENTS.md) and
+The registered workflows, exact operation status, commands, pins, limits and
+validation evidence live in [INSTRUMENTS.md](docs/INSTRUMENTS.md) and
 [INTEGRATION_COVERAGE.md](docs/INTEGRATION_COVERAGE.md).
 
 ## Current scope
@@ -65,6 +102,55 @@ These are bounded computational capabilities. They do not imply a live DAQ
 bus, generic sensor fusion, physical calibration, equipment actuation or
 independent verification of every numerical result.
 
+## A laboratory for the framework
+
+The research question is:
+
+> Can a shared state/variation/invariant representation reduce modelling and
+> integration overhead while preserving the engineering results that matter?
+
+The workbench is the experimental apparatus for that question. The proposed
+comparison is deliberately concrete:
+
+```text
+Conventional formulation ------> reference execution ---+
+                                                       |
+Shared state representation ---> workbench execution ---+--> compare
+                                                            |
+                                  results, invariants, error, cost
+```
+
+Start with one bounded design chain, such as the existing oscillator model
+exploration. Retain its reference formulation, declare the valid input domain
+and tolerances, compare both paths on held-out inputs, and challenge them with
+invalid cases. Extend to measurement/design and geometry workflows only as the
+shared representation earns that extension.
+
+| Question | Evidence to collect |
+| --- | --- |
+| Are the required answers preserved? | Output agreement under declared tolerances, uncertainty semantics, reference comparisons and failure cases. |
+| Is the representation smaller? | Explicit definitions of representation size, duplicated interfaces, adapter code and additional structure required. |
+| Is integration easier? | Work needed to add or modify an operation, with execution and verification costs reported separately. |
+| Are the claims supported? | Retained inputs, source/runtime pins, executions, checks, refusals and replayable results. |
+
+An invariant belongs to a declared transformation and domain. Conservation,
+admissibility constraints and consistency under a change of representation
+need distinct checks; they are not interchangeable. Passing those checks alone
+does not establish output equivalence or physical validity.
+
+This is a research programme, not a completed universal compiler or a measured
+compression result. Category theory, topology and other mathematical machinery
+can support composition and domain structure where a workload needs them.
+The objective is **less duplicated representation, with the required meaning
+and evidence preserved**.
+
+The same three questions also guide the human-facing learning interface:
+understand the state, explore a variation, then inspect what held and what
+failed. Wider participation in scientific and industrial design is a goal to
+validate, alongside the computational claims.
+
+**Build -> run -> observe -> fix -> audit -> continue.**
+
 ## Architecture
 
 The project keeps three graphs related but distinct:
@@ -84,12 +170,17 @@ The generic state-space transformation contract is described in
 The research vocabulary behind that contract is in
 [RESEARCH_CONTEXT.md](docs/RESEARCH_CONTEXT.md).
 
+The existing `ciw.state-transformation-contract.v1` validates a declaration's
+structure and content identity. It does not execute a transformation, establish
+that an invariant held or authorize equipment. Operation and verification
+records remain separate from the contract.
+
 The intended authority modes are Explore, Observe, Prepare and Operate.
 Current CIW operations are read-only with respect to external equipment.
 Operation success does not authorize an actuator; local protection and machine
 controllers remain independent.
 
-## Systems and loose-tool collapse
+## Composable instruments, independent scientific authority
 
 The surrounding repositories are not copied into this checkout or treated as
 one undocumented monolith. Each keeps its own README, license, tests and
@@ -164,8 +255,8 @@ matrix and [SYSTEMS_CATALOG.md](docs/SYSTEMS_CATALOG.md) for provider status.
 
 | Topic | Canonical page |
 | --- | --- |
-| Product scope and scientific workspace | [Workbench overview](docs/WORKBENCH_OVERVIEW.md) |
-| Provider and loose-tool map | [Systems catalog](docs/SYSTEMS_CATALOG.md) |
+| Engineering design scope and scientific workspace | [Workbench overview](docs/WORKBENCH_OVERVIEW.md) |
+| Provider and instrument map | [Systems catalog](docs/SYSTEMS_CATALOG.md) |
 | Implementation architecture | [Architecture](docs/ARCHITECTURE.md) |
 | Operation catalogue | [Instruments](docs/INSTRUMENTS.md) |
 | Mathematical model exploration | [Model exploration](docs/MODEL_EXPLORATION.md) |
@@ -185,5 +276,4 @@ integration matrix or provider manifests.
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 only
-(AGPL-3.0-only). See the published repository's [LICENSE](https://github.com/giasonpooni/Notation-Systems-Workbench/blob/main/LICENSE).
-
+(AGPL-3.0-only). See [LICENSE](LICENSE).
