@@ -177,3 +177,8 @@ The [exact-response checker](EXACT_RESPONSE.md) separates arithmetic, derivative
 meaning and a radius-bound claim using reduced rational numbers. Its explicit
 `check-exact` and retained `inspect-exact` commands share this terminal script.
 It does not upgrade these floating-point previews or produce an SP1 proof.
+
+The [bounded design-adjustment study](DESIGN_ADJUSTMENT.md) reverses the question:
+JuMP selects one permitted variation, then an exact rational certificate checker
+assesses its objective, feasibility and optimality gap. Full nonlinear output
+remains separately visible.
