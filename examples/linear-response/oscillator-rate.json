@@ -1,0 +1,46 @@
+{
+  "profile": "oscillator-rate.v1",
+  "base_point": [
+    1.0,
+    -0.25
+  ],
+  "delta": [
+    0.1,
+    0.2
+  ],
+  "input_order": [
+    "q",
+    "v"
+  ],
+  "input_units": [
+    "m",
+    "m/s"
+  ],
+  "frame": "oscillator-state",
+  "anchor": "initial_state",
+  "source": {
+    "schema": "ciw.julia-oscillator-source.v1",
+    "experiment_id": "linear-response-golden-v1",
+    "operation_id": "ciw.julia-oscillator.v1",
+    "model": {
+      "mass_kg": 2.0,
+      "omega_0_rad_s": 2.0,
+      "gamma_s_inv": 0.1
+    },
+    "initial_state": {
+      "q0_m": 1.0,
+      "v0_m_s": -0.25
+    },
+    "time_s": [
+      0.0,
+      0.1,
+      0.2
+    ],
+    "solver": {
+      "abstol": 1e-10,
+      "reltol": 1e-10,
+      "maxiters": 100000
+    },
+    "claim_scope": "simulated_numerical_trajectory_against_independent_analytic_oracle"
+  }
+}

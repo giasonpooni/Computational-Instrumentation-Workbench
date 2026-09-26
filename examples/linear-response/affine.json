@@ -1,0 +1,22 @@
+{
+  "profile": "affine.v1",
+  "base_point": [
+    3.0,
+    4.0
+  ],
+  "delta": [
+    0.1,
+    -0.2
+  ],
+  "input_order": [
+    "x1",
+    "x2"
+  ],
+  "input_units": [
+    "1",
+    "1"
+  ],
+  "frame": "dimensionless-cartesian",
+  "anchor": "declared_point",
+  "source": null
+}

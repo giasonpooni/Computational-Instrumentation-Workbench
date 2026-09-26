@@ -1,0 +1,18 @@
+{
+  "profile": "scalar-square.v1",
+  "base_point": [
+    3.0
+  ],
+  "delta": [
+    0.05
+  ],
+  "input_order": [
+    "x"
+  ],
+  "input_units": [
+    "1"
+  ],
+  "frame": "dimensionless-cartesian",
+  "anchor": "declared_point",
+  "source": null
+}
