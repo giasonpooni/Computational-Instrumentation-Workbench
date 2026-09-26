@@ -1,11 +1,19 @@
-# Engineering Design Workbench
+# Parametric Design Testbed
 
 **State. Variation. Invariance.**
 
-The **Engineering Design Workbench (EDW)** is a terminal-first laboratory for
-computational engineering design. It brings measurements, models, numerical
-operations, uncertainty and evidence into one workspace so engineers can
-explore design choices, inspect results and test what must remain true.
+**An evidence-backed environment for modelling, varying and evaluating
+engineered systems.**
+
+The **Parametric Design Testbed (PDT)** is a terminal-first laboratory for
+computational engineering design. It connects explicit design parameters and
+model relationships to computed responses, candidate comparisons and retained
+evidence.
+
+Engineering design is the purpose; parametric variation is the method. The
+testbed is where models, numerical operations and verification methods are
+exercised and challenged, rather than treating a generated candidate as an
+established result.
 
 Part of **Notation Systems' computational instrumentation and evidence
 infrastructure** for industrial and cyber-physical systems.
@@ -23,44 +31,65 @@ Start with three questions:
 | **Variation** | What can change, and through which allowed transformations? |
 | **Invariance** | What must remain true through those transformations? |
 
+Parameters expose selected design choices; they are not the entire state. An
+oscillator's damping is a parameter, while its position and velocity are state
+variables. Varying the parameter changes the predicted response under the
+declared model.
+
+Parametric design need not be limited to numerical sliders. A supported profile
+may also expose a material choice, component configuration or model selection.
+Each operation must declare what it actually supports; structural changes must
+remain explicit rather than masquerading as ordinary parameter edits.
+
 The aim is a shared working language across engineering domains, not a separate
 conceptual framework for every instrument. Units, geometry, clocks, uncertainty,
 constraints and numerical methods stay explicit wherever the problem needs
 them. Specialist repositories retain authority over their equations and solvers.
 
+The design-study pattern is:
+
 ```text
 Design question + objectives
           |
           v
-Declare state, allowed variation and required invariants
+Declare model, parameters, allowed variation and requirements
           |
           v
-Run a registered model or measurement operation
+Construct a candidate within the declared domain
           |
           v
-Inspect outputs, uncertainty, constraints and checks
+Run registered model or measurement operations
           |
           v
-Compare candidates -> retain evidence -> refine the design
+Compare responses, uncertainty, constraints and checks
+          |
+          v
+Retain evidence -> revise design choices -> repeat
 ```
+
+Support for each part of this pattern is operation-specific. The current scope
+and linked operating guides below distinguish runnable capabilities from
+research goals.
 
 The operator defines the question, assumptions, objectives, constraints and
 standard of evidence. AI assistance is optional; generated candidates are not
 verified results. The terminal, scripts and optional graphical client remain
 useful without an LLM.
 
-### Existing runtime, broader design purpose
+### Existing runtime, same substrate
 
-EDW extends the existing **Computational Instrumentation Workbench (CIW)**.
-The distribution remains `computational-instrumentation-workbench`; the Python
-import and CLI command remain `ciw`. References to CIW in source and technical
-documentation identify that existing runtime and its contracts.
+PDT is the current project identity for the existing engineering design
+workbench. It extends the **Computational Instrumentation Workbench (CIW)**;
+it does not create a second runtime. The distribution remains
+`computational-instrumentation-workbench`; the Python import and CLI command
+remain `ciw`. References to CIW in source and technical documentation identify
+that existing runtime and its contracts.
 
-This design-oriented framing does not rename schemas, migrate saved records or
+The project-name change does not rename schemas, migrate saved records or
 replace numerical engines. New design workloads, representations and checkers
 must plug into the existing substrate rather than create a parallel one.
 
-## What the workbench does
+## What the testbed does
 
     observe -> align -> calibrate -> propagate uncertainty
        -> estimate -> evaluate constraints -> diagnose -> advise
@@ -102,27 +131,30 @@ These are bounded computational capabilities. They do not imply a live DAQ
 bus, generic sensor fusion, physical calibration, equipment actuation or
 independent verification of every numerical result.
 
-## A laboratory for the framework
+## A testbed for parametric design and representation
 
 The research question is:
 
-> Can a shared state/variation/invariant representation reduce modelling and
-> integration overhead while preserving the engineering results that matter?
+> Can a shared state/variation/invariant representation make parametric design
+> studies easier to compose and compare while preserving required engineering
+> results and evidence?
 
-The workbench is the experimental apparatus for that question. The proposed
-comparison is deliberately concrete:
+PDT tests both the design methods and the representation used to connect them.
+Reference comparisons, held-out inputs and deliberately invalid cases expose
+the limits of each claim. The proposed comparison is deliberately concrete:
 
 ```text
 Conventional formulation ------> reference execution ---+
                                                        |
-Shared state representation ---> workbench execution ---+--> compare
+Shared state representation ---> registered execution --+--> compare
                                                             |
                                   results, invariants, error, cost
 ```
 
-Start with one bounded design chain, such as the existing oscillator model
-exploration. Retain its reference formulation, declare the valid input domain
-and tolerances, compare both paths on held-out inputs, and challenge them with
+Start with one bounded parameter study, such as the existing oscillator model
+exploration. Damping variations expose changes in the trajectory and energy
+trace. Retain the reference formulation, declare the valid input domain and
+tolerances, compare both paths on held-out inputs, and challenge them with
 invalid cases. Extend to measurement/design and geometry workflows only as the
 shared representation earns that extension.
 
