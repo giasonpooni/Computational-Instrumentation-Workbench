@@ -6,6 +6,9 @@ For the current public component inventory and integration boundaries, see the
 This document describes the implementation in this repository. Exact wire and
 record fields are specified in [PROTOCOL.md](PROTOCOL.md); supported operations
 and their qualifications are listed in [INSTRUMENTS.md](INSTRUMENTS.md).
+The [execution responsibility map](EXECUTION_RESPONSIBILITIES.md) relates the
+implemented Python host to Julia, native providers and selected proof paths,
+and distinguishes future execution and equipment boundaries.
 
 ## Components
 

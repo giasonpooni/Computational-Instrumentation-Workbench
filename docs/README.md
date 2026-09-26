@@ -15,6 +15,7 @@ imports `ciw`, and the command-line entry point is also `ciw`.
 | Product scope, operating model and scientific workspace | [Workbench overview](WORKBENCH_OVERVIEW.md) |
 | Current provider map and loose-tool collapse rule | [Systems catalog](SYSTEMS_CATALOG.md) |
 | Executable implementation architecture | [Architecture](ARCHITECTURE.md) |
+| Python, Julia, native execution and proof responsibilities | [Execution responsibilities](EXECUTION_RESPONSIBILITIES.md) |
 | Multi-provider assembly and local deployment | [Workbench assembly](WORKBENCH_ASSEMBLY.md) |
 | Current executable paths and remaining gates | [Integration coverage](INTEGRATION_COVERAGE.md) |
 | User-facing instruments and exact commands | [Instrument catalogue](INSTRUMENTS.md) |
