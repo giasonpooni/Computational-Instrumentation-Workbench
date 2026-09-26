@@ -1,0 +1,61 @@
+{
+  "problem": {
+    "specification_digest": "sha256:cf0edfdfe865074166978b9ea01ccada46614cfe00edd6147dd7eedf42da0f4c",
+    "x": {
+      "numerator": 3,
+      "denominator": 1
+    },
+    "target": {
+      "numerator": 10,
+      "denominator": 1
+    },
+    "regularization": {
+      "numerator": 1,
+      "denominator": 1
+    },
+    "lower": {
+      "numerator": 0,
+      "denominator": 1
+    },
+    "upper": {
+      "numerator": 0,
+      "denominator": 1
+    },
+    "epsilon": {
+      "numerator": 1,
+      "denominator": 1000000
+    }
+  },
+  "delta": {
+    "numerator": 0,
+    "denominator": 1
+  },
+  "lower_multiplier": {
+    "numerator": 0,
+    "denominator": 1
+  },
+  "upper_multiplier": {
+    "numerator": 12,
+    "denominator": 1
+  },
+  "predicted_output": {
+    "numerator": 9,
+    "denominator": 1
+  },
+  "nonlinear_output": {
+    "numerator": 9,
+    "denominator": 1
+  },
+  "objective": {
+    "numerator": 1,
+    "denominator": 1
+  },
+  "lower_bound": {
+    "numerator": 1,
+    "denominator": 1
+  },
+  "gap": {
+    "numerator": 0,
+    "denominator": 1
+  }
+}
