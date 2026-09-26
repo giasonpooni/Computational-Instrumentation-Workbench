@@ -26,6 +26,7 @@ imports `ciw`, and the command-line entry point is also `ciw`.
 - [Protocol and record identities](PROTOCOL.md)
 - [Contract foundations and typed exchange](CONTRACT_FOUNDATIONS.md)
 - [State-space transformation contract](STATE_TRANSFORMATIONS.md)
+- [Workbench research context](RESEARCH_CONTEXT.md)
 - [Generic adapters](ADAPTERS.md)
 - [Covariance provenance and replay](COVARIANCE.md)
 - [Retained telemetry](TELEMETRY.md) and [shared telemetry](SHARED_TELEMETRY.md)
