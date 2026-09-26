@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from ciw.linear_response import (load_preview, load_request, preview,
                                  render_preview, save_preview)  # noqa: E402
+from ciw import exact_response  # noqa: E402
 
 
 def main(argv=None):
@@ -22,8 +23,25 @@ def main(argv=None):
     inspect = actions.add_parser("inspect", help="Check and display saved content without model or provider calls")
     inspect.add_argument("path", type=Path)
     inspect.add_argument("--details", action="store_true")
+    exact = actions.add_parser("check-exact", help="Explicitly check a square-model rational candidate; no SP1 proof")
+    exact.add_argument("source", type=Path, help="Exact rational candidate JSON")
+    exact.add_argument("--output", type=Path, required=True, help="New local checker report path")
+    exact.add_argument("--details", action="store_true")
+    saved_exact = actions.add_parser("inspect-exact", help="Display a retained report without checking its mathematical claims again")
+    saved_exact.add_argument("path", type=Path)
+    saved_exact.add_argument("--details", action="store_true")
     args = parser.parse_args(argv)
     try:
+        if args.action in {"check-exact", "inspect-exact"}:
+            if args.action == "check-exact":
+                record = exact_response.check_candidate(exact_response.load_candidate(args.source))
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                exact_response.save_check(args.output, record)
+                print("Explicit local reference check completed; no SP1 proof produced.")
+            else:
+                record = exact_response.load_check(args.path)
+            print(exact_response.render_check(record, details=args.details))
+            return 1 if args.action == "check-exact" and record["status"] == "rejected" else 0
         if args.action == "create":
             record = preview(load_request(args.source))
             args.output.parent.mkdir(parents=True, exist_ok=True)

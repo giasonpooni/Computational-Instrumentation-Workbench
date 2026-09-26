@@ -1,0 +1,39 @@
+{
+  "specification_digest": "sha256:5f1c6c9cc3bd1dc76521919e4f3083dae34137f56b5fa619ea72a0da8e692d51",
+  "x": {
+    "numerator": 3,
+    "denominator": 1
+  },
+  "delta": {
+    "numerator": 1,
+    "denominator": 10
+  },
+  "radius": {
+    "numerator": 1,
+    "denominator": 10
+  },
+  "baseline_output": {
+    "numerator": 9,
+    "denominator": 1
+  },
+  "local_multiplier": {
+    "numerator": 6,
+    "denominator": 1
+  },
+  "predicted_output": {
+    "numerator": 48,
+    "denominator": 5
+  },
+  "model_output": {
+    "numerator": 961,
+    "denominator": 100
+  },
+  "residual": {
+    "numerator": 1,
+    "denominator": 100
+  },
+  "error_bound": {
+    "numerator": 1,
+    "denominator": 100
+  }
+}
