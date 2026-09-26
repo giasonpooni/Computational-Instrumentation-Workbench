@@ -8,6 +8,13 @@ spaces:
                               -> output state
 ```
 
+At the research level this is the operational form of the smaller
+representation `\(\mathcal S + \Delta\mathcal S + \mathcal I\)`: the input
+space supplies `\(\mathcal S\)`, the declared transformation and its domain
+describe `\(\Delta\mathcal S\)`, and the invariant declarations supply
+`\(\mathcal I\)`. See [the research context](RESEARCH_CONTEXT.md) for the
+educational and modelling vocabulary.
+
 The state spaces carry coordinate names, units, roles, reference frames and
 clock declarations. A transformation describes the mathematical operation and
 its parameters. Constraints describe the admissible domain. Invariants state
