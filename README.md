@@ -212,6 +212,179 @@ Current CIW operations are read-only with respect to external equipment.
 Operation success does not authorize an actuator; local protection and machine
 controllers remain independent.
 
+## Kernel architecture
+
+**Development target: a small shared core with typed, composable computational
+kernels.** The families below organize existing instruments and future adapters;
+they are not a claim that a universal kernel library or a complete native fusion
+stack is already implemented. The current-scope table and
+[integration coverage](docs/INTEGRATION_COVERAGE.md) own capability status.
+
+A kernel performs one bounded mathematical operation. A domain profile supplies
+its model, state representation, units, assumptions and validity domain. The
+shared infrastructure supplies registration, execution, retained records and
+verification links. Chemistry, physics, biology, agriculture, AEC, logistics,
+manufacturing and social modelling can then be approached through specialist
+profiles in one environment, without assuming identical equations, uncertainty
+models or standards of evidence. Cross-domain coverage remains a research goal.
+
+### Computational kernel families
+
+| Family | Primitive job | Existing foundation / next extension |
+| --- | --- | --- |
+| **Linear response and numerical algebra** | Scale and combine changes; evaluate local response maps and declared uncertainty propagation. | JSPT and current model previews; extend the common scalar/affine/Jacobian view without replacing their engines. |
+| **Dynamics and geometry** | Propagate a declared state through time or along a geometric path. | Oscillator, thermal and geodesic profiles; add only the solver, coordinate and validity structure each workload requires. |
+| **Inference and sensor fusion** | Predict state, incorporate eligible observations and retain uncertainty and residuals. | FSRT/GSIE and bounded measurement paths; extend toward explicit multi-rate, multi-sensor profiles. |
+| **Constraint reconciliation** | Assess disagreement and, when permitted, compute a correction without hiding the original state. | Existing FSRT/CBSR/CSE paths; preserve held, refused and accepted meanings under each provider's contract. |
+| **Design search and experiment selection** | Compare or select permitted variations under declared objectives and constraints. | Existing bounded selection paths; JuMP/JuliaControl integration remains a separately tested provider extension. |
+| **Claim and certificate checking** | Check a specified property of the model, calculation or candidate. | Existing references, PLSR and ICRH; selected registered SCR/SP1 workloads, not a blanket proof of every result. |
+
+These are responsibilities, not six new services or mandatory directory trees.
+Keep pure numerical routines separate from device I/O, orchestration, storage
+and policy. Reuse domain providers; do not copy their solvers into PDT or create
+an estimator in every language merely to populate the language chart.
+
+For differentiable Euclidean models, the common local-response view is:
+
+```text
+predicted output = starting output + response matrix * input change
+residual         = full model output - predicted output
+```
+
+The change relation is exact for an affine map; a nonlinear linearization must
+name its base point and applicable domain. Other state spaces need their own
+valid change operations, not automatic vector subtraction. The matrix is a
+local sensitivity, not a quantity assumed invariant across every state.
+
+### Kernel contracts
+
+Extend the existing [state transformation contract](docs/STATE_TRANSFORMATIONS.md)
+and operation lifecycle rather than introducing a competing record format.
+Each implemented profile must specify:
+
+- **Meaning:** ordered inputs/outputs, units, frame, clock and interval support,
+  model identity, parameters, preconditions and allowed transformations.
+- **Numerics:** arithmetic, algorithm/runtime pins, tolerances and resource
+  bounds; exact, approximate and stochastic claims must remain distinct.
+  Stochastic profiles must bind their random-stream policy and replay scope.
+- **Uncertainty:** the supported representation, dependencies and propagation
+  assumptions. Preserve full required covariance and correlation; unknown
+  uncertainty is not zero, and covariance is not mandatory for every model.
+- **Evidence:** immutable input bindings, actual execution, outputs, residuals,
+  applicable checks and explicit refusal/inconclusive outcomes. Mathematical
+  agreement, physical validation and permission to use a result stay separate.
+
+Invariants are relative to the named transformation. Conservation, covariance
+transformation, admissibility and evidence integrity require different checks.
+A declaration or passing invariant check alone does not establish the required
+answer. Historical contracts and independently checked reference paths remain
+protected when a new implementation is added.
+
+### Language boundaries
+
+This is the target responsibility split, not a mandatory language pipeline:
+
+| Layer | Responsibility and compatibility boundary |
+| --- | --- |
+| **Python / PDT** | Study orchestration, current authoritative session, scientific records, adapters, inspection and independent references. Existing Python calculations remain supported. |
+| **Rust / SCR** | Extend the existing execution boundary with bounded native dispatch, worker supervision and selected checkers. Do not duplicate the session or evidence store. |
+| **Julia** | Pinned numerical providers for modelling, integration, estimation and design. JuMP and JuliaControl are candidate extensions, not installed capabilities implied by this table. |
+| **C/C++** | Qualified native kernels, simulation libraries and device adapters behind explicit bindings. A language boundary alone provides neither process isolation nor real-time qualification. |
+| **SP1** | Prove a selected registered computation or checker; verify it separately against the expected program, inputs, configuration and outputs. It does not automatically prove Julia execution or physical truth. |
+| **TypeScript / ESM and GSV** | Preserve separate evidence-governance and read-only geographic-inspection responsibilities. A display or candidate-retention receipt cannot admit canonical state. |
+
+```text
+PDT study + typed state + declared operation
+                      |
+             Existing CIW/SCR boundary
+                      |
+          Registered, pinned provider adapters
+             /             |              \
+     Python reference   Julia worker   Rust / C++ kernels
+             \             |              /
+                 Result + diagnostics
+                          |
+       Separate checks / optional registered SP1 proof
+                          |
+            Retain, inspect and compare in PDT
+```
+
+The diagram is a target composition; supported routes remain operation-specific.
+Use bounded process messages first where isolation is required. Introduce typed
+in-process bindings only for a demonstrated need, with ownership, buffer layout,
+endianness, error handling and version compatibility tested. A C++ exception or
+worker failure must not become an empty successful result. Requests and saved
+artifacts must never select arbitrary code, imports or executable paths.
+
+Retain the exact transport bytes and bind a canonical semantic representation
+where cross-language comparison needs it. Distinguish semantic equality from
+transport-byte equality. Cross-backend results must use declared comparison
+policies; pinning software does not itself guarantee bitwise floating-point
+agreement. See [Julia/SP1 contracts](docs/JULIA_SP1.md) for the existing seam.
+
+### Sensor fusion
+
+The first extension should make one bounded observation-to-state loop work
+across the existing interfaces, not add a generic fusion label:
+
+```text
+Recorded or acquired observations + source lineage
+                 |
+   Explicit calibration, clock and frame mappings
+                 |
+      Prior state -> predict -> measurement update
+                 |
+    Posterior + covariance + predictive innovations
+                 |
+   Assess consistency / observability / model limits
+                 |
+        Retain the estimate and its evidence
+```
+
+Each profile must define its measurement models and the dependencies between
+prior, observations, process noise and calibration. Shared sensor errors must
+not be treated as independent; a duplicate observation must not add information
+twice. Keep event time, arrival time and playback separate. Missing samples stay
+missing. Late data require an explicitly supported update/replay policy or an
+explicit hold/refusal, not silent reinterpretation as current measurements.
+
+Reuse the existing calibration, clock, covariance, estimation and diagnostic
+providers. Preserve pre-update predictions and pre-correction residuals; checking
+only a corrected state can hide disagreement. Unsupported cross-covariance or
+rank-deficient inference must remain explicit. A physical balance does not by
+itself identify a faulty sensor, and a satisfied constraint does not make a
+candidate an observation.
+
+Current measurement and telemetry profiles are narrower than this target;
+[coverage](docs/INTEGRATION_COVERAGE.md) and the
+[covariance contract](docs/COVARIANCE.md) specify their limits. No generic live
+sensor bus or hardware controller is introduced by this architecture description.
+
+### Qualification and next executable slice
+
+Start with one declared linear-response or oscillator profile: exchange actual
+requests across the native boundaries, compare against an independent reference,
+and retain the result through the existing session. Extend that same path to a
+bounded two-sensor reconstruction with explicit timing and noise assumptions.
+This supports the existing design-study programme; it does not replace it.
+
+Required gates include genuine worker execution, coordinate/unit/order checks,
+duplicate/dropout/late-data cases, shared-error challenges, stale model/runtime
+bindings, bounded failure recovery, provider-free reopen and explicit fresh
+replay. Proof-enabled profiles additionally require a real proof, independent
+verification and rejection of corrupted or mismatched claims. Report skipped or
+unavailable gates as such, never as passes.
+
+Measure cold startup, warm computation, transfer, checking and proof costs
+separately. Keep exploration and proof production outside any future
+deadline-critical control loop. Qualification for industrial use is per workload
+and deployment: numerical correctness, physical validation, security, recovery
+and timing need their own evidence. No platform-wide industrial-grade or
+real-time claim follows from the choice of languages or these interfaces.
+
+**One environment, shared contracts, specialist kernels, independently qualified
+claims.**
+
 ## Composable instruments, independent scientific authority
 
 The surrounding repositories are not copied into this checkout or treated as
