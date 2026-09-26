@@ -47,3 +47,22 @@ Each preview also reports a `comparison` object. It gives `max_abs_delta` and
 energy endpoints. This makes the effect of a bounded parameter change visible
 without confusing an offline what-if with a retained experiment.
 
+## Sensitivity sweeps
+
+For a small parameter study, use the bounded sensitivity command:
+
+```text
+ciw julia-oscillator sensitivity \
+  --source examples/julia/oscillator.json \
+  --path model.gamma_s_inv \
+  --value 0.0 --value 0.1 --value 0.2 \
+  --output results/julia-oscillator/damping-sweep.json
+```
+
+The sweep contains one preview case per distinct value, including its
+trajectory and baseline comparison. It accepts two to nine values and applies
+the same source-domain validation to every case. A sweep is an educational
+projection with no execution or result identities; submit an individual
+augmented source through the registered operation before treating it as a
+retained computational result.
+
