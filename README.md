@@ -81,6 +81,8 @@ wire and record fields are in [PROTOCOL.md](docs/PROTOCOL.md). The cross-provide
 session is assembled as described in [WORKBENCH_ASSEMBLY.md](docs/WORKBENCH_ASSEMBLY.md).
 The generic state-space transformation contract is described in
 [STATE_TRANSFORMATIONS.md](docs/STATE_TRANSFORMATIONS.md).
+The research vocabulary behind that contract is in
+[RESEARCH_CONTEXT.md](docs/RESEARCH_CONTEXT.md).
 
 The intended authority modes are Explore, Observe, Prepare and Operate.
 Current CIW operations are read-only with respect to external equipment.
@@ -171,6 +173,7 @@ matrix and [SYSTEMS_CATALOG.md](docs/SYSTEMS_CATALOG.md) for provider status.
 | Shared assembly and deployment | [Workbench assembly](docs/WORKBENCH_ASSEMBLY.md) |
 | Typed contracts and exchange | [Contract foundations](docs/CONTRACT_FOUNDATIONS.md) |
 | State spaces, transformations and invariants | [State transformation contract](docs/STATE_TRANSFORMATIONS.md) |
+| Research premise and educational vocabulary | [Research context](docs/RESEARCH_CONTEXT.md) |
 | Protocol and identities | [Protocol](docs/PROTOCOL.md) |
 | Development and tests | [Development guide](docs/DEVELOPMENT.md) |
 | Diagrams | [Diagram atlas](docs/DIAGRAMS.md) |
