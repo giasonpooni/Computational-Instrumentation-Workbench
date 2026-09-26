@@ -170,3 +170,10 @@ units, source immutability and offline inspection are testable without Julia.
 Genuine Julia execution, calibrated physical claims, and educational transfer
 remain separate gates; this interface demonstrates reusable calculation and
 inspection, not learning gains or execution speedups.
+
+## Exact square-model checks
+
+The [exact-response checker](EXACT_RESPONSE.md) separates arithmetic, derivative
+meaning and a radius-bound claim using reduced rational numbers. Its explicit
+`check-exact` and retained `inspect-exact` commands share this terminal script.
+It does not upgrade these floating-point previews or produce an SP1 proof.
